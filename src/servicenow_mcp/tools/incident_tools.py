@@ -5,22 +5,20 @@ This module provides tools for managing incidents in ServiceNow.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Optional, List
 
 import requests
-from mcp.server.fastmcp.tools import Tool
 from pydantic import BaseModel, Field
 
 from servicenow_mcp.auth.auth_manager import AuthManager
 from servicenow_mcp.utils.config import ServerConfig
-
 
 logger = logging.getLogger(__name__)
 
 
 class CreateIncidentParams(BaseModel):
     """Parameters for creating an incident."""
-    
+
     short_description: str = Field(..., description="Short description of the incident")
     description: Optional[str] = Field(None, description="Detailed description of the incident")
     caller_id: Optional[str] = Field(None, description="User who reported the incident")
@@ -35,7 +33,7 @@ class CreateIncidentParams(BaseModel):
 
 class UpdateIncidentParams(BaseModel):
     """Parameters for updating an incident."""
-    
+
     incident_id: str = Field(..., description="Incident ID or sys_id")
     short_description: Optional[str] = Field(None, description="Short description of the incident")
     description: Optional[str] = Field(None, description="Detailed description of the incident")
@@ -54,7 +52,7 @@ class UpdateIncidentParams(BaseModel):
 
 class AddCommentParams(BaseModel):
     """Parameters for adding a comment to an incident."""
-    
+
     incident_id: str = Field(..., description="Incident ID or sys_id")
     comment: str = Field(..., description="Comment to add to the incident")
     is_work_note: bool = Field(False, description="Whether the comment is a work note")
@@ -62,15 +60,26 @@ class AddCommentParams(BaseModel):
 
 class ResolveIncidentParams(BaseModel):
     """Parameters for resolving an incident."""
-    
+
     incident_id: str = Field(..., description="Incident ID or sys_id")
     resolution_code: str = Field(..., description="Resolution code for the incident")
     resolution_notes: str = Field(..., description="Resolution notes for the incident")
 
 
+class ListIncidentsParams(BaseModel):
+    """Parameters for listing incidents."""
+    
+    limit: int = Field(10, description="Maximum number of incidents to return")
+    offset: int = Field(0, description="Offset for pagination")
+    state: Optional[str] = Field(None, description="Filter by incident state")
+    assigned_to: Optional[str] = Field(None, description="Filter by assigned user")
+    category: Optional[str] = Field(None, description="Filter by category")
+    query: Optional[str] = Field(None, description="Search query for incidents")
+
+
 class IncidentResponse(BaseModel):
     """Response from incident operations."""
-    
+
     success: bool = Field(..., description="Whether the operation was successful")
     message: str = Field(..., description="Message describing the result")
     incident_id: Optional[str] = Field(None, description="ID of the affected incident")
@@ -84,22 +93,22 @@ def create_incident(
 ) -> IncidentResponse:
     """
     Create a new incident in ServiceNow.
-    
+
     Args:
         config: Server configuration.
         auth_manager: Authentication manager.
         params: Parameters for creating the incident.
-        
+
     Returns:
         Response with the created incident details.
     """
     api_url = f"{config.api_url}/table/incident"
-    
+
     # Build request data
     data = {
         "short_description": params.short_description,
     }
-    
+
     if params.description:
         data["description"] = params.description
     if params.caller_id:
@@ -118,7 +127,7 @@ def create_incident(
         data["assigned_to"] = params.assigned_to
     if params.assignment_group:
         data["assignment_group"] = params.assignment_group
-    
+
     # Make request
     try:
         response = requests.post(
@@ -128,16 +137,16 @@ def create_incident(
             timeout=config.timeout,
         )
         response.raise_for_status()
-        
+
         result = response.json().get("result", {})
-        
+
         return IncidentResponse(
             success=True,
             message="Incident created successfully",
             incident_id=result.get("sys_id"),
             incident_number=result.get("number"),
         )
-        
+
     except requests.RequestException as e:
         logger.error(f"Failed to create incident: {e}")
         return IncidentResponse(
@@ -153,12 +162,12 @@ def update_incident(
 ) -> IncidentResponse:
     """
     Update an existing incident in ServiceNow.
-    
+
     Args:
         config: Server configuration.
         auth_manager: Authentication manager.
         params: Parameters for updating the incident.
-        
+
     Returns:
         Response with the updated incident details.
     """
@@ -176,7 +185,7 @@ def update_incident(
                 "sysparm_query": f"number={incident_id}",
                 "sysparm_limit": 1,
             }
-            
+
             response = requests.get(
                 query_url,
                 params=query_params,
@@ -184,27 +193,27 @@ def update_incident(
                 timeout=config.timeout,
             )
             response.raise_for_status()
-            
+
             result = response.json().get("result", [])
             if not result:
                 return IncidentResponse(
                     success=False,
                     message=f"Incident not found: {incident_id}",
                 )
-            
+
             incident_id = result[0].get("sys_id")
             api_url = f"{config.api_url}/table/incident/{incident_id}"
-            
+
         except requests.RequestException as e:
             logger.error(f"Failed to find incident: {e}")
             return IncidentResponse(
                 success=False,
                 message=f"Failed to find incident: {str(e)}",
             )
-    
+
     # Build request data
     data = {}
-    
+
     if params.short_description:
         data["short_description"] = params.short_description
     if params.description:
@@ -231,7 +240,7 @@ def update_incident(
         data["close_notes"] = params.close_notes
     if params.close_code:
         data["close_code"] = params.close_code
-    
+
     # Make request
     try:
         response = requests.put(
@@ -241,16 +250,16 @@ def update_incident(
             timeout=config.timeout,
         )
         response.raise_for_status()
-        
+
         result = response.json().get("result", {})
-        
+
         return IncidentResponse(
             success=True,
             message="Incident updated successfully",
             incident_id=result.get("sys_id"),
             incident_number=result.get("number"),
         )
-        
+
     except requests.RequestException as e:
         logger.error(f"Failed to update incident: {e}")
         return IncidentResponse(
@@ -266,12 +275,12 @@ def add_comment(
 ) -> IncidentResponse:
     """
     Add a comment to an incident in ServiceNow.
-    
+
     Args:
         config: Server configuration.
         auth_manager: Authentication manager.
         params: Parameters for adding the comment.
-        
+
     Returns:
         Response with the result of the operation.
     """
@@ -289,7 +298,7 @@ def add_comment(
                 "sysparm_query": f"number={incident_id}",
                 "sysparm_limit": 1,
             }
-            
+
             response = requests.get(
                 query_url,
                 params=query_params,
@@ -297,32 +306,32 @@ def add_comment(
                 timeout=config.timeout,
             )
             response.raise_for_status()
-            
+
             result = response.json().get("result", [])
             if not result:
                 return IncidentResponse(
                     success=False,
                     message=f"Incident not found: {incident_id}",
                 )
-            
+
             incident_id = result[0].get("sys_id")
             api_url = f"{config.api_url}/table/incident/{incident_id}"
-            
+
         except requests.RequestException as e:
             logger.error(f"Failed to find incident: {e}")
             return IncidentResponse(
                 success=False,
                 message=f"Failed to find incident: {str(e)}",
             )
-    
+
     # Build request data
     data = {}
-    
+
     if params.is_work_note:
         data["work_notes"] = params.comment
     else:
         data["comments"] = params.comment
-    
+
     # Make request
     try:
         response = requests.put(
@@ -332,16 +341,16 @@ def add_comment(
             timeout=config.timeout,
         )
         response.raise_for_status()
-        
+
         result = response.json().get("result", {})
-        
+
         return IncidentResponse(
             success=True,
             message="Comment added successfully",
             incident_id=result.get("sys_id"),
             incident_number=result.get("number"),
         )
-        
+
     except requests.RequestException as e:
         logger.error(f"Failed to add comment: {e}")
         return IncidentResponse(
@@ -357,12 +366,12 @@ def resolve_incident(
 ) -> IncidentResponse:
     """
     Resolve an incident in ServiceNow.
-    
+
     Args:
         config: Server configuration.
         auth_manager: Authentication manager.
         params: Parameters for resolving the incident.
-        
+
     Returns:
         Response with the result of the operation.
     """
@@ -380,7 +389,7 @@ def resolve_incident(
                 "sysparm_query": f"number={incident_id}",
                 "sysparm_limit": 1,
             }
-            
+
             response = requests.get(
                 query_url,
                 params=query_params,
@@ -388,24 +397,24 @@ def resolve_incident(
                 timeout=config.timeout,
             )
             response.raise_for_status()
-            
+
             result = response.json().get("result", [])
             if not result:
                 return IncidentResponse(
                     success=False,
                     message=f"Incident not found: {incident_id}",
                 )
-            
+
             incident_id = result[0].get("sys_id")
             api_url = f"{config.api_url}/table/incident/{incident_id}"
-            
+
         except requests.RequestException as e:
             logger.error(f"Failed to find incident: {e}")
             return IncidentResponse(
                 success=False,
                 message=f"Failed to find incident: {str(e)}",
             )
-    
+
     # Build request data
     data = {
         "state": "6",  # Resolved
@@ -413,7 +422,7 @@ def resolve_incident(
         "close_notes": params.resolution_notes,
         "resolved_at": "now",
     }
-    
+
     # Make request
     try:
         response = requests.put(
@@ -423,19 +432,108 @@ def resolve_incident(
             timeout=config.timeout,
         )
         response.raise_for_status()
-        
+
         result = response.json().get("result", {})
-        
+
         return IncidentResponse(
             success=True,
             message="Incident resolved successfully",
             incident_id=result.get("sys_id"),
             incident_number=result.get("number"),
         )
-        
+
     except requests.RequestException as e:
         logger.error(f"Failed to resolve incident: {e}")
         return IncidentResponse(
             success=False,
             message=f"Failed to resolve incident: {str(e)}",
-        ) 
+        )
+
+
+def list_incidents(
+    config: ServerConfig,
+    auth_manager: AuthManager,
+    params: ListIncidentsParams,
+) -> dict:
+    """
+    List incidents from ServiceNow.
+
+    Args:
+        config: Server configuration.
+        auth_manager: Authentication manager.
+        params: Parameters for listing incidents.
+
+    Returns:
+        Dictionary with list of incidents.
+    """
+    api_url = f"{config.api_url}/table/incident"
+
+    # Build query parameters
+    query_params = {
+        "sysparm_limit": params.limit,
+        "sysparm_offset": params.offset,
+        "sysparm_display_value": "true",
+        "sysparm_exclude_reference_link": "true",
+    }
+    
+    # Add filters
+    filters = []
+    if params.state:
+        filters.append(f"state={params.state}")
+    if params.assigned_to:
+        filters.append(f"assigned_to={params.assigned_to}")
+    if params.category:
+        filters.append(f"category={params.category}")
+    if params.query:
+        filters.append(f"short_descriptionLIKE{params.query}^ORdescriptionLIKE{params.query}")
+    
+    if filters:
+        query_params["sysparm_query"] = "^".join(filters)
+    
+    # Make request
+    try:
+        response = requests.get(
+            api_url,
+            params=query_params,
+            headers=auth_manager.get_headers(),
+            timeout=config.timeout,
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        incidents = []
+        
+        for incident_data in data.get("result", []):
+            # Handle assigned_to field which could be a string or a dictionary
+            assigned_to = incident_data.get("assigned_to")
+            if isinstance(assigned_to, dict):
+                assigned_to = assigned_to.get("display_value")
+            
+            incident = {
+                "sys_id": incident_data.get("sys_id"),
+                "number": incident_data.get("number"),
+                "short_description": incident_data.get("short_description"),
+                "description": incident_data.get("description"),
+                "state": incident_data.get("state"),
+                "priority": incident_data.get("priority"),
+                "assigned_to": assigned_to,
+                "category": incident_data.get("category"),
+                "subcategory": incident_data.get("subcategory"),
+                "created_on": incident_data.get("sys_created_on"),
+                "updated_on": incident_data.get("sys_updated_on"),
+            }
+            incidents.append(incident)
+        
+        return {
+            "success": True,
+            "message": f"Found {len(incidents)} incidents",
+            "incidents": incidents
+        }
+        
+    except requests.RequestException as e:
+        logger.error(f"Failed to list incidents: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to list incidents: {str(e)}",
+            "incidents": []
+        }
