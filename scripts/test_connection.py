@@ -91,6 +91,16 @@ def test_connection():
     # Load environment variables
     load_dotenv()
     
+    # Print all environment variables related to ServiceNow
+    print("Environment variables:")
+    for key, value in os.environ.items():
+        if "SERVICENOW" in key:
+            masked_value = value
+            if "PASSWORD" in key or "SECRET" in key:
+                masked_value = "*" * len(value)
+            print(f"  {key}={masked_value}")
+    print()
+    
     # Get ServiceNow credentials
     instance_url = os.getenv("SERVICENOW_INSTANCE_URL")
     auth_type = os.getenv("SERVICENOW_AUTH_TYPE", "basic")
@@ -121,6 +131,8 @@ def test_connection():
             
         auth = (username, password)
         print("Using basic authentication (username/password)")
+        print(f"Username: {username}")
+        print(f"Password: {'*' * len(password)}")
         
     elif auth_type == "oauth":
         client_id = os.getenv("SERVICENOW_CLIENT_ID")
@@ -162,11 +174,23 @@ def test_connection():
         sys.exit(1)
     
     try:
+        # Print request details
+        print("\nRequest details:")
+        print(f"URL: {api_url}")
+        print(f"Headers: {headers}")
+        if auth:
+            print(f"Auth: ({auth[0]}, {'*' * len(auth[1])})")
+        
         # Make a test request
         if auth:
             response = requests.get(api_url, auth=auth, headers=headers)
         else:
             response = requests.get(api_url, headers=headers)
+        
+        # Print response details
+        print("\nResponse details:")
+        print(f"Status code: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
         
         # Check response
         if response.status_code == 200:
