@@ -15,6 +15,20 @@ from servicenow_mcp.tools.change_tools import (
     approve_change,
     reject_change,
 )
+from servicenow_mcp.tools.workflow_tools import (
+    list_workflows,
+    get_workflow_details,
+    list_workflow_versions,
+    get_workflow_activities,
+    create_workflow,
+    update_workflow,
+    activate_workflow,
+    deactivate_workflow,
+    add_workflow_activity,
+    update_workflow_activity,
+    delete_workflow_activity,
+    reorder_workflow_activities,
+)
 # from servicenow_mcp.tools.problem_tools import create_problem, update_problem
 # from servicenow_mcp.tools.request_tools import create_request, update_request
 
@@ -40,6 +54,20 @@ __all__ = [
     "submit_change_for_approval",
     "approve_change",
     "reject_change",
+    
+    # Workflow management tools
+    "list_workflows",
+    "get_workflow_details",
+    "list_workflow_versions",
+    "get_workflow_activities",
+    "create_workflow",
+    "update_workflow",
+    "activate_workflow",
+    "deactivate_workflow",
+    "add_workflow_activity",
+    "update_workflow_activity",
+    "delete_workflow_activity",
+    "reorder_workflow_activities",
     
     # Future tools
     # "create_problem",

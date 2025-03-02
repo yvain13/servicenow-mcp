@@ -96,6 +96,57 @@ from servicenow_mcp.tools.change_tools import (
     update_change_request as update_change_request_tool,
 )
 
+from servicenow_mcp.tools.workflow_tools import (
+    GetWorkflowActivitiesParams,
+    GetWorkflowDetailsParams,
+    ListWorkflowsParams,
+    ListWorkflowVersionsParams,
+    CreateWorkflowParams,
+    UpdateWorkflowParams,
+    ActivateWorkflowParams,
+    DeactivateWorkflowParams,
+    AddWorkflowActivityParams,
+    UpdateWorkflowActivityParams,
+    DeleteWorkflowActivityParams,
+    ReorderWorkflowActivitiesParams,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    get_workflow_activities as get_workflow_activities_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    get_workflow_details as get_workflow_details_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    list_workflows as list_workflows_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    list_workflow_versions as list_workflow_versions_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    create_workflow as create_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    update_workflow as update_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    activate_workflow as activate_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    deactivate_workflow as deactivate_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    add_workflow_activity as add_workflow_activity_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    update_workflow_activity as update_workflow_activity_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    delete_workflow_activity as delete_workflow_activity_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    reorder_workflow_activities as reorder_workflow_activities_tool,
+)
+
 
 class ServiceNowMCP:
     """
@@ -262,6 +313,67 @@ class ServiceNowMCP:
         def reject_change(params: RejectChangeParams) -> str:
             """Reject a change request"""
             return reject_change_tool(self.config, self.auth_manager, params)
+
+        # Register workflow management tools
+        @self.mcp_server.tool()
+        def list_workflows(params: ListWorkflowsParams) -> str:
+            """List workflows from ServiceNow"""
+            return list_workflows_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def get_workflow_details(params: GetWorkflowDetailsParams) -> str:
+            """Get detailed information about a specific workflow"""
+            return get_workflow_details_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def list_workflow_versions(params: ListWorkflowVersionsParams) -> str:
+            """List workflow versions from ServiceNow"""
+            return list_workflow_versions_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def get_workflow_activities(params: GetWorkflowActivitiesParams) -> str:
+            """Get activities for a specific workflow"""
+            return get_workflow_activities_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def create_workflow(params: CreateWorkflowParams) -> str:
+            """Create a new workflow in ServiceNow"""
+            return create_workflow_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def update_workflow(params: UpdateWorkflowParams) -> str:
+            """Update an existing workflow in ServiceNow"""
+            return update_workflow_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def activate_workflow(params: ActivateWorkflowParams) -> str:
+            """Activate a workflow in ServiceNow"""
+            return activate_workflow_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def deactivate_workflow(params: DeactivateWorkflowParams) -> str:
+            """Deactivate a workflow in ServiceNow"""
+            return deactivate_workflow_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def add_workflow_activity(params: AddWorkflowActivityParams) -> str:
+            """Add a new activity to a workflow in ServiceNow"""
+            return add_workflow_activity_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def update_workflow_activity(params: UpdateWorkflowActivityParams) -> str:
+            """Update an existing activity in a workflow"""
+            return update_workflow_activity_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def delete_workflow_activity(params: DeleteWorkflowActivityParams) -> str:
+            """Delete an activity from a workflow"""
+            return delete_workflow_activity_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def reorder_workflow_activities(params: ReorderWorkflowActivitiesParams) -> str:
+            """Reorder activities in a workflow"""
+            return reorder_workflow_activities_tool(self.config, self.auth_manager, params)
 
     def start(self):
         """Start the MCP server."""
