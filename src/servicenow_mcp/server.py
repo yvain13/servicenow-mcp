@@ -61,6 +61,41 @@ from servicenow_mcp.tools.incident_tools import (
 )
 from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
 
+from servicenow_mcp.tools.change_tools import (
+    AddChangeTaskParams,
+    ApproveChangeParams,
+    CreateChangeRequestParams,
+    GetChangeRequestDetailsParams,
+    ListChangeRequestsParams,
+    RejectChangeParams,
+    SubmitChangeForApprovalParams,
+    UpdateChangeRequestParams,
+)
+from servicenow_mcp.tools.change_tools import (
+    add_change_task as add_change_task_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    approve_change as approve_change_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    create_change_request as create_change_request_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    get_change_request_details as get_change_request_details_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    list_change_requests as list_change_requests_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    reject_change as reject_change_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    submit_change_for_approval as submit_change_for_approval_tool,
+)
+from servicenow_mcp.tools.change_tools import (
+    update_change_request as update_change_request_tool,
+)
+
 
 class ServiceNowMCP:
     """
@@ -186,6 +221,47 @@ class ServiceNowMCP:
         def update_catalog_item(params: UpdateCatalogItemParams) -> str:
             """Update a service catalog item"""
             return update_catalog_item_tool(self.config, self.auth_manager, params)
+
+        # Register change management tools
+        @self.mcp_server.tool()
+        def create_change_request(params: CreateChangeRequestParams) -> str:
+            """Create a new change request in ServiceNow"""
+            return create_change_request_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def update_change_request(params: UpdateChangeRequestParams) -> str:
+            """Update an existing change request in ServiceNow"""
+            return update_change_request_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def list_change_requests(params: ListChangeRequestsParams) -> str:
+            """List change requests from ServiceNow"""
+            return list_change_requests_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def get_change_request_details(params: GetChangeRequestDetailsParams) -> str:
+            """Get detailed information about a specific change request"""
+            return get_change_request_details_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def add_change_task(params: AddChangeTaskParams) -> str:
+            """Add a task to a change request"""
+            return add_change_task_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def submit_change_for_approval(params: SubmitChangeForApprovalParams) -> str:
+            """Submit a change request for approval"""
+            return submit_change_for_approval_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def approve_change(params: ApproveChangeParams) -> str:
+            """Approve a change request"""
+            return approve_change_tool(self.config, self.auth_manager, params)
+
+        @self.mcp_server.tool()
+        def reject_change(params: RejectChangeParams) -> str:
+            """Reject a change request"""
+            return reject_change_tool(self.config, self.auth_manager, params)
 
     def start(self):
         """Start the MCP server."""
