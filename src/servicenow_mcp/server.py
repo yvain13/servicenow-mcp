@@ -17,6 +17,7 @@ from servicenow_mcp.resources.catalog import (
     CatalogResource,
 )
 from servicenow_mcp.resources.incidents import IncidentListParams, IncidentResource
+from servicenow_mcp.resources.changesets import ChangesetListParams, ChangesetResource
 from servicenow_mcp.tools.catalog_tools import (
     GetCatalogItemParams,
     ListCatalogCategoriesParams,
@@ -147,6 +148,37 @@ from servicenow_mcp.tools.workflow_tools import (
     reorder_workflow_activities as reorder_workflow_activities_tool,
 )
 
+from servicenow_mcp.tools.changeset_tools import (
+    ListChangesetsParams,
+    GetChangesetDetailsParams,
+    CreateChangesetParams,
+    UpdateChangesetParams,
+    CommitChangesetParams,
+    PublishChangesetParams,
+    AddFileToChangesetParams,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    list_changesets as list_changesets_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    get_changeset_details as get_changeset_details_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    create_changeset as create_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    update_changeset as update_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    commit_changeset as commit_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    publish_changeset as publish_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    add_file_to_changeset as add_file_to_changeset_tool,
+)
+
 
 class ServiceNowMCP:
     """
@@ -216,6 +248,21 @@ class ServiceNowMCP:
         async def get_catalog_item(item_id: str) -> str:
             """Get a specific catalog item from ServiceNow by ID"""
             return await catalog_resource.get_catalog_item(item_id)
+
+        # Register changeset resources
+        changeset_resource = ChangesetResource(self.config, self.auth_manager)
+        
+        @self.mcp_server.resource("changesets://list")
+        async def list_changesets() -> str:
+            """List changesets from ServiceNow"""
+            # Since there's no URI parameter, we pass an empty params object
+            changesets = await changeset_resource.list_changesets(ChangesetListParams())
+            return changesets
+            
+        @self.mcp_server.resource("changeset://{changeset_id}")
+        async def get_changeset(changeset_id: str) -> str:
+            """Get a specific changeset from ServiceNow by ID"""
+            return await changeset_resource.get_changeset(changeset_id)
 
     def _register_tools(self):
         """Register all ServiceNow tools with the MCP server."""
@@ -374,6 +421,42 @@ class ServiceNowMCP:
         def reorder_workflow_activities(params: ReorderWorkflowActivitiesParams) -> str:
             """Reorder activities in a workflow"""
             return reorder_workflow_activities_tool(self.config, self.auth_manager, params)
+
+        # Register changeset management tools
+        @self.mcp_server.tool()
+        def list_changesets(params: ListChangesetsParams) -> str:
+            """List changesets from ServiceNow"""
+            return list_changesets_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def get_changeset_details(params: GetChangesetDetailsParams) -> str:
+            """Get detailed information about a specific changeset"""
+            return get_changeset_details_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def create_changeset(params: CreateChangesetParams) -> str:
+            """Create a new changeset in ServiceNow"""
+            return create_changeset_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def update_changeset(params: UpdateChangesetParams) -> str:
+            """Update an existing changeset in ServiceNow"""
+            return update_changeset_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def commit_changeset(params: CommitChangesetParams) -> str:
+            """Commit a changeset in ServiceNow"""
+            return commit_changeset_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def publish_changeset(params: PublishChangesetParams) -> str:
+            """Publish a changeset in ServiceNow"""
+            return publish_changeset_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def add_file_to_changeset(params: AddFileToChangesetParams) -> str:
+            """Add a file to a changeset in ServiceNow"""
+            return add_file_to_changeset_tool(self.config, self.auth_manager, params)
 
     def start(self):
         """Start the MCP server."""
