@@ -1,174 +1,224 @@
 #!/usr/bin/env python3
 """
-Catalog Optimization Example
+Example script demonstrating how to use the ServiceNow MCP catalog optimization tools.
 
-This script demonstrates how to use the catalog optimization tools to analyze
-and optimize a ServiceNow service catalog.
+This script shows how to:
+1. Get optimization recommendations for a ServiceNow Service Catalog
+2. Update catalog items with improved descriptions
+
+Usage:
+    python catalog_optimization_example.py [--update-descriptions]
+
+Options:
+    --update-descriptions    Automatically update items with poor descriptions
 """
 
 import argparse
-import os
+import logging
 import sys
+from typing import Dict
 
-from dotenv import load_dotenv
-
-# Add the src directory to the path so we can import the modules
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-from servicenow_mcp.auth.auth_manager import AuthManager
+from servicenow_mcp.server import ServiceNowMCP
 from servicenow_mcp.tools.catalog_optimization import (
     OptimizationRecommendationsParams,
     UpdateCatalogItemParams,
-    get_optimization_recommendations,
-    update_catalog_item,
 )
-from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
+from servicenow_mcp.utils.config import load_config
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+def get_optimization_recommendations(server: ServiceNowMCP) -> Dict:
+    """
+    Get optimization recommendations for the ServiceNow Service Catalog.
+    
+    Args:
+        server: The ServiceNowMCP server instance
+        
+    Returns:
+        Dict containing the optimization recommendations
+    """
+    logger.info("Getting catalog optimization recommendations...")
+    
+    # Create parameters for all recommendation types
+    params = OptimizationRecommendationsParams(
+        recommendation_types=[
+            "inactive_items",
+            "low_usage",
+            "high_abandonment",
+            "slow_fulfillment",
+            "description_quality",
+        ]
+    )
+    
+    # Call the tool
+    result = server.tools["get_optimization_recommendations"](params)
+    
+    if not result["success"]:
+        logger.error(f"Failed to get optimization recommendations: {result.get('message', 'Unknown error')}")
+        return {}
+    
+    return result
+
+
+def print_recommendations(recommendations: Dict) -> None:
+    """
+    Print the optimization recommendations in a readable format.
+    
+    Args:
+        recommendations: The optimization recommendations dictionary
+    """
+    if not recommendations or "recommendations" not in recommendations:
+        logger.warning("No recommendations available")
+        return
+    
+    print("\n" + "=" * 80)
+    print("SERVICENOW CATALOG OPTIMIZATION RECOMMENDATIONS")
+    print("=" * 80)
+    
+    for rec in recommendations["recommendations"]:
+        print(f"\n{rec['title']} ({rec['type']})")
+        print("-" * len(rec['title']))
+        print(f"Description: {rec['description']}")
+        print(f"Impact: {rec['impact'].upper()}")
+        print(f"Effort: {rec['effort'].upper()}")
+        print(f"Recommended Action: {rec['action']}")
+        
+        if rec["items"]:
+            print("\nAffected Items:")
+            for i, item in enumerate(rec["items"], 1):
+                print(f"  {i}. {item['name']}")
+                print(f"     ID: {item['sys_id']}")
+                print(f"     Description: {item['short_description'] or '(No description)'}")
+                
+                # Print additional details based on recommendation type
+                if rec["type"] == "low_usage":
+                    print(f"     Order Count: {item['order_count']}")
+                elif rec["type"] == "high_abandonment":
+                    print(f"     Abandonment Rate: {item['abandonment_rate']}%")
+                    print(f"     Cart Adds: {item['cart_adds']}")
+                    print(f"     Completed Orders: {item['orders']}")
+                elif rec["type"] == "slow_fulfillment":
+                    print(f"     Avg. Fulfillment Time: {item['avg_fulfillment_time']} days")
+                    print(f"     Compared to Catalog Avg: {item['avg_fulfillment_time_vs_catalog']}x slower")
+                elif rec["type"] == "description_quality":
+                    print(f"     Description Quality Score: {item['description_quality']}/100")
+                    print(f"     Issues: {', '.join(item['quality_issues'])}")
+                
+                print()
+        else:
+            print("\nNo items found in this category.")
+    
+    print("=" * 80)
+
+
+def update_poor_descriptions(server: ServiceNowMCP, recommendations: Dict) -> None:
+    """
+    Update catalog items with poor descriptions.
+    
+    Args:
+        server: The ServiceNowMCP server instance
+        recommendations: The optimization recommendations dictionary
+    """
+    # Find the description quality recommendation
+    description_rec = None
+    for rec in recommendations.get("recommendations", []):
+        if rec["type"] == "description_quality":
+            description_rec = rec
+            break
+    
+    if not description_rec or not description_rec.get("items"):
+        logger.warning("No items with poor descriptions found")
+        return
+    
+    logger.info(f"Found {len(description_rec['items'])} items with poor descriptions")
+    
+    # Update each item with a better description
+    for item in description_rec["items"]:
+        # Generate an improved description based on the item name and category
+        improved_description = generate_improved_description(item)
+        
+        logger.info(f"Updating description for item: {item['name']} (ID: {item['sys_id']})")
+        logger.info(f"  Original: {item['short_description'] or '(No description)'}")
+        logger.info(f"  Improved: {improved_description}")
+        
+        # Create parameters for updating the item
+        params = UpdateCatalogItemParams(
+            item_id=item["sys_id"],
+            short_description=improved_description,
+        )
+        
+        # Call the tool
+        result = server.tools["update_catalog_item"](params)
+        
+        if result["success"]:
+            logger.info(f"Successfully updated description for {item['name']}")
+        else:
+            logger.error(f"Failed to update description: {result.get('message', 'Unknown error')}")
+
+
+def generate_improved_description(item: Dict) -> str:
+    """
+    Generate an improved description for a catalog item.
+    
+    In a real implementation, this could use AI to generate better descriptions,
+    but for this example we'll use a simple template-based approach.
+    
+    Args:
+        item: The catalog item dictionary
+        
+    Returns:
+        An improved description string
+    """
+    name = item["name"]
+    category = item.get("category", "").lower()
+    
+    # Simple templates based on category
+    if "hardware" in category:
+        return f"Enterprise-grade {name.lower()} for professional use. Includes standard warranty and IT support."
+    elif "software" in category:
+        return f"Licensed {name.lower()} application with full feature set. Includes installation support."
+    elif "service" in category:
+        return f"Professional {name.lower()} service delivered by our expert team. Includes consultation and implementation."
+    else:
+        return f"High-quality {name.lower()} available through IT self-service. Contact the service desk for assistance."
 
 
 def main():
-    """Run the catalog optimization example."""
-    parser = argparse.ArgumentParser(description="Catalog Optimization Example")
-    parser.add_argument(
-        "--instance-url",
-        help="ServiceNow instance URL",
-        default=os.getenv("SERVICENOW_INSTANCE_URL"),
-    )
-    parser.add_argument(
-        "--username",
-        help="ServiceNow username",
-        default=os.getenv("SERVICENOW_USERNAME"),
-    )
-    parser.add_argument(
-        "--password",
-        help="ServiceNow password",
-        default=os.getenv("SERVICENOW_PASSWORD"),
-    )
-    parser.add_argument(
-        "--category",
-        help="Filter by category ID",
-        default=None,
-    )
-    parser.add_argument(
-        "--recommendation-types",
-        help="Types of recommendations to include (comma-separated)",
-        default="inactive_items,low_usage,high_abandonment,slow_fulfillment,description_quality",
-    )
+    """Main function to run the example."""
+    parser = argparse.ArgumentParser(description="ServiceNow Catalog Optimization Example")
     parser.add_argument(
         "--update-descriptions",
-        help="Automatically update poor descriptions",
         action="store_true",
+        help="Automatically update items with poor descriptions",
     )
     args = parser.parse_args()
-
-    # Load environment variables
-    load_dotenv()
-
-    # Check for required arguments
-    if not args.instance_url:
-        print("Error: ServiceNow instance URL is required")
-        sys.exit(1)
-    if not args.username:
-        print("Error: ServiceNow username is required")
-        sys.exit(1)
-    if not args.password:
-        print("Error: ServiceNow password is required")
-        sys.exit(1)
-
-    # Create server configuration
-    auth_config = AuthConfig(
-        type=AuthType.BASIC,
-        basic=BasicAuthConfig(username=args.username, password=args.password),
-    )
-    config = ServerConfig(instance_url=args.instance_url, auth=auth_config)
-    auth_manager = AuthManager(config.auth)
-
-    # Parse recommendation types
-    recommendation_types = args.recommendation_types.split(",")
-
-    # Get optimization recommendations
-    print("\n=== Getting Catalog Optimization Recommendations ===\n")
-    params = OptimizationRecommendationsParams(
-        category_id=args.category,
-        recommendation_types=recommendation_types,
-    )
-    result = get_optimization_recommendations(config, auth_manager, params)
-
-    if not result["success"]:
-        print(f"Error: {result['message']}")
-        sys.exit(1)
-
-    # Print the recommendations
-    recommendations = result["recommendations"]
-    print(f"Found {len(recommendations)} optimization recommendations:\n")
-
-    for i, rec in enumerate(recommendations, 1):
-        print(f"{i}. {rec['title']}")
-        print(f"   Impact: {rec['impact']}, Effort: {rec['effort']}")
-        print(f"   {rec['description']}")
-        print(f"   Recommended Action: {rec['action']}")
-        print(f"   Affected Items: {len(rec['items'])}")
-
-        # Print a few example items
-        for j, item in enumerate(rec["items"][:3], 1):
-            print(f"     {j}. {item.get('name', 'Unknown')} - {item.get('short_description', 'No description')}")
-            
-            # Print additional details based on recommendation type
-            if rec["type"] == "low_usage":
-                print(f"        Order Count: {item.get('order_count', 'Unknown')}")
-            elif rec["type"] == "high_abandonment":
-                print(f"        Abandonment Rate: {item.get('abandonment_rate', 'Unknown')}%")
-                print(f"        Cart Adds: {item.get('cart_adds', 'Unknown')}, Orders: {item.get('orders', 'Unknown')}")
-            elif rec["type"] == "slow_fulfillment":
-                print(f"        Avg. Fulfillment Time: {item.get('avg_fulfillment_time', 'Unknown')} days")
-                print(f"        vs. Catalog Avg: {item.get('avg_fulfillment_time_vs_catalog', 'Unknown')}x slower")
-            elif rec["type"] == "description_quality":
-                print(f"        Quality Score: {item.get('description_quality', 'Unknown')}/100")
-                print(f"        Issues: {', '.join(item.get('quality_issues', ['Unknown']))}")
-                
-        if len(rec["items"]) > 3:
-            print(f"     ... and {len(rec['items']) - 3} more items")
-        print()
-
-    # Automatically update poor descriptions if requested
-    if args.update_descriptions and any(rec["type"] == "description_quality" for rec in recommendations):
-        print("\n=== Automatically Updating Poor Descriptions ===\n")
+    
+    try:
+        # Load configuration
+        config = load_config()
         
-        # Find the description quality recommendation
-        for rec in recommendations:
-            if rec["type"] == "description_quality":
-                poor_description_items = rec["items"]
-                break
+        # Initialize the ServiceNow MCP server
+        server = ServiceNowMCP(config)
         
-        # Update each item with a poor description
-        for item in poor_description_items:
-            item_id = item.get("sys_id")
-            name = item.get("name", "Unknown")
-            old_description = item.get("short_description", "")
-            
-            # Generate an improved description
-            if not old_description:
-                new_description = f"A {name} service that provides users with the ability to request {name.lower()} related services."
-            elif len(old_description) < 30:
-                new_description = f"{old_description} This service provides comprehensive {name.lower()} functionality for users."
-            else:
-                # Just make it longer by adding more context
-                new_description = f"{old_description} This service is designed to meet organizational needs for {name.lower()}."
-            
-            print(f"Updating description for '{name}':")
-            print(f"  Old: {old_description}")
-            print(f"  New: {new_description}")
-            
-            # Update the item
-            update_params = UpdateCatalogItemParams(
-                item_id=item_id,
-                short_description=new_description,
-            )
-            update_result = update_catalog_item(config, auth_manager, update_params)
-            
-            if update_result["success"]:
-                print(f"  Result: Success\n")
-            else:
-                print(f"  Result: Failed - {update_result['message']}\n")
+        # Get optimization recommendations
+        recommendations = get_optimization_recommendations(server)
+        
+        # Print the recommendations
+        print_recommendations(recommendations)
+        
+        # Update poor descriptions if requested
+        if args.update_descriptions and recommendations:
+            update_poor_descriptions(server, recommendations)
+    
+    except Exception as e:
+        logger.exception(f"Error running catalog optimization example: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,17 @@
 """
-Service Catalog optimization tools for the ServiceNow MCP server.
+Tools for optimizing the ServiceNow Service Catalog.
 
-This module provides tools for analyzing and optimizing the service catalog in ServiceNow.
+This module provides tools for analyzing and optimizing the ServiceNow Service Catalog,
+including identifying inactive items, items with low usage, high abandonment rates,
+slow fulfillment times, and poor descriptions.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+import random
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 import requests
-from pydantic import BaseModel, Field
 
 from servicenow_mcp.auth.auth_manager import AuthManager
 from servicenow_mcp.utils.config import ServerConfig
@@ -16,452 +19,461 @@ from servicenow_mcp.utils.config import ServerConfig
 logger = logging.getLogger(__name__)
 
 
-class OptimizationRecommendationsParams(BaseModel):
-    """Parameters for getting catalog optimization recommendations."""
-    
-    category_id: Optional[str] = Field(None, description="Filter by category ID")
-    recommendation_types: List[str] = Field(
-        ["inactive_items", "low_usage", "high_abandonment", "slow_fulfillment", "description_quality"],
-        description="Types of recommendations to include"
-    )
+@dataclass
+class OptimizationRecommendationsParams:
+    """Parameters for getting optimization recommendations."""
+
+    recommendation_types: List[str]
+    category_id: Optional[str] = None
 
 
-class CatalogStructureAnalysisParams(BaseModel):
-    """Parameters for analyzing catalog structure."""
-    
-    include_inactive: bool = Field(False, description="Whether to include inactive categories and items")
-
-
-class UpdateCatalogItemParams(BaseModel):
+@dataclass
+class UpdateCatalogItemParams:
     """Parameters for updating a catalog item."""
-    
-    item_id: str = Field(..., description="Catalog item ID to update")
-    name: Optional[str] = Field(None, description="New name for the item")
-    short_description: Optional[str] = Field(None, description="New short description")
-    description: Optional[str] = Field(None, description="New detailed description")
-    category: Optional[str] = Field(None, description="New category ID")
-    price: Optional[str] = Field(None, description="New price")
-    active: Optional[bool] = Field(None, description="Whether the item is active")
-    order: Optional[int] = Field(None, description="Display order in the category")
+
+    item_id: str
+    name: Optional[str] = None
+    short_description: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[str] = None
+    active: Optional[bool] = None
+    order: Optional[int] = None
 
 
 def get_optimization_recommendations(
-    config: ServerConfig,
-    auth_manager: AuthManager,
-    params: OptimizationRecommendationsParams,
-) -> Dict[str, Any]:
+    config: ServerConfig, auth_manager: AuthManager, params: OptimizationRecommendationsParams
+) -> Dict:
     """
-    Get recommendations for optimizing the service catalog.
+    Get optimization recommendations for the ServiceNow Service Catalog.
 
     Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        params: Parameters for getting optimization recommendations
+        config: The server configuration
+        auth_manager: The authentication manager
+        params: The parameters for getting optimization recommendations
 
     Returns:
-        Dictionary containing optimization recommendations
+        A dictionary containing the optimization recommendations
     """
     logger.info("Getting catalog optimization recommendations")
+    
     recommendations = []
-    
-    # Get inactive items
-    if "inactive_items" in params.recommendation_types:
-        inactive_items = _get_inactive_items(config, auth_manager, params.category_id)
-        if inactive_items:
-            recommendations.append({
-                "type": "inactive_items",
-                "title": "Consider retiring inactive catalog items",
-                "description": "These items are marked as inactive but still exist in the catalog",
-                "items": inactive_items,
-                "impact": "High",
-                "effort": "Low",
-                "action": "Review these items and consider removing them from the catalog"
-            })
-    
-    # Get low usage items
-    if "low_usage" in params.recommendation_types:
-        low_usage_items = _get_low_usage_items(config, auth_manager, params.category_id)
-        if low_usage_items:
-            recommendations.append({
-                "type": "low_usage",
-                "title": "Items with low usage",
-                "description": "These items have been ordered rarely or not at all in the last 90 days",
-                "items": low_usage_items,
-                "impact": "Medium",
-                "effort": "Medium",
-                "action": "Consider promoting these items, improving their descriptions, or retiring them"
-            })
-    
-    # Get items with high abandonment
-    if "high_abandonment" in params.recommendation_types:
-        high_abandonment_items = _get_high_abandonment_items(config, auth_manager, params.category_id)
-        if high_abandonment_items:
-            recommendations.append({
-                "type": "high_abandonment",
-                "title": "Items with high abandonment rates",
-                "description": "These items are frequently added to carts but not ordered",
-                "items": high_abandonment_items,
-                "impact": "High",
-                "effort": "Medium",
-                "action": "Review the item variables and simplify the ordering process"
-            })
-    
-    # Get items with slow fulfillment
-    if "slow_fulfillment" in params.recommendation_types:
-        slow_fulfillment_items = _get_slow_fulfillment_items(config, auth_manager, params.category_id)
-        if slow_fulfillment_items:
-            recommendations.append({
-                "type": "slow_fulfillment",
-                "title": "Items with slow fulfillment times",
-                "description": "These items take longer than average to fulfill",
-                "items": slow_fulfillment_items,
-                "impact": "High",
-                "effort": "High",
-                "action": "Review the fulfillment workflow and identify bottlenecks"
-            })
-    
-    # Get items with poor descriptions
-    if "description_quality" in params.recommendation_types:
-        poor_description_items = _get_poor_description_items(config, auth_manager, params.category_id)
-        if poor_description_items:
-            recommendations.append({
-                "type": "description_quality",
-                "title": "Items with poor description quality",
-                "description": "These items have short or generic descriptions that may confuse users",
-                "items": poor_description_items,
-                "impact": "Medium",
-                "effort": "Low",
-                "action": "Improve the descriptions to be more detailed and specific"
-            })
-    
-    return {
-        "success": True,
-        "message": f"Found {len(recommendations)} optimization recommendations",
-        "recommendations": recommendations
-    }
-
-
-def _get_inactive_items(config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """
-    Get inactive catalog items.
-    
-    Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        category_id: Optional category ID to filter by
-        
-    Returns:
-        List of inactive catalog items
-    """
-    # Build query to get inactive items
-    url = f"{config.instance_url}/api/now/table/sc_cat_item"
-    query_params = {
-        "sysparm_query": "active=false",
-        "sysparm_fields": "sys_id,name,short_description,category",
-        "sysparm_limit": 50
-    }
-    
-    if category_id:
-        query_params["sysparm_query"] += f"^category={category_id}"
-    
-    headers = auth_manager.get_headers()
-    headers["Accept"] = "application/json"
+    category_id = params.category_id
     
     try:
-        response = requests.get(url, headers=headers, params=query_params)
-        response.raise_for_status()
-        result = response.json()
-        return result.get("result", [])
-    except Exception as e:
-        logger.error(f"Error getting inactive items: {str(e)}")
-        return []
-
-
-def _get_low_usage_items(config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """
-    Get catalog items with low usage.
-    
-    Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        category_id: Optional category ID to filter by
-        
-    Returns:
-        List of catalog items with low usage
-    """
-    # In a real implementation, this would query the ServiceNow API for order statistics
-    # and identify items with low usage. For this example, we'll simulate the response.
-    
-    # First, get all active items
-    url = f"{config.instance_url}/api/now/table/sc_cat_item"
-    query_params = {
-        "sysparm_query": "active=true",
-        "sysparm_fields": "sys_id,name,short_description,category",
-        "sysparm_limit": 50
-    }
-    
-    if category_id:
-        query_params["sysparm_query"] += f"^category={category_id}"
-    
-    headers = auth_manager.get_headers()
-    headers["Accept"] = "application/json"
-    
-    try:
-        response = requests.get(url, headers=headers, params=query_params)
-        response.raise_for_status()
-        result = response.json()
-        items = result.get("result", [])
-        
-        # For this example, we'll randomly select a subset of items as "low usage"
-        # In a real implementation, this would be based on actual order statistics
-        import random
-        low_usage_items = random.sample(items, min(len(items), 5))
-        
-        # Add a simulated order count
-        for item in low_usage_items:
-            item["order_count"] = random.randint(0, 3)
+        # Get recommendations based on the requested types
+        for rec_type in params.recommendation_types:
+            if rec_type == "inactive_items":
+                items = _get_inactive_items(config, auth_manager, category_id)
+                if items:
+                    recommendations.append({
+                        "type": "inactive_items",
+                        "title": "Inactive Catalog Items",
+                        "description": "Items that are currently inactive in the catalog",
+                        "items": items,
+                        "impact": "medium",
+                        "effort": "low",
+                        "action": "Review and either update or remove these items",
+                    })
             
-        return low_usage_items
-    except Exception as e:
-        logger.error(f"Error getting low usage items: {str(e)}")
-        return []
-
-
-def _get_high_abandonment_items(config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """
-    Get catalog items with high abandonment rates.
-    
-    Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        category_id: Optional category ID to filter by
-        
-    Returns:
-        List of catalog items with high abandonment rates
-    """
-    # In a real implementation, this would query the ServiceNow API for cart and order statistics
-    # and identify items with high abandonment rates. For this example, we'll simulate the response.
-    
-    # First, get all active items
-    url = f"{config.instance_url}/api/now/table/sc_cat_item"
-    query_params = {
-        "sysparm_query": "active=true",
-        "sysparm_fields": "sys_id,name,short_description,category",
-        "sysparm_limit": 50
-    }
-    
-    if category_id:
-        query_params["sysparm_query"] += f"^category={category_id}"
-    
-    headers = auth_manager.get_headers()
-    headers["Accept"] = "application/json"
-    
-    try:
-        response = requests.get(url, headers=headers, params=query_params)
-        response.raise_for_status()
-        result = response.json()
-        items = result.get("result", [])
-        
-        # For this example, we'll randomly select a subset of items as "high abandonment"
-        # In a real implementation, this would be based on actual cart and order statistics
-        import random
-        high_abandonment_items = random.sample(items, min(len(items), 3))
-        
-        # Add a simulated abandonment rate
-        for item in high_abandonment_items:
-            item["abandonment_rate"] = random.randint(40, 80)
-            item["cart_adds"] = random.randint(10, 50)
-            item["orders"] = int(item["cart_adds"] * (1 - item["abandonment_rate"] / 100))
+            elif rec_type == "low_usage":
+                items = _get_low_usage_items(config, auth_manager, category_id)
+                if items:
+                    recommendations.append({
+                        "type": "low_usage",
+                        "title": "Low Usage Catalog Items",
+                        "description": "Items that have very few orders",
+                        "items": items,
+                        "impact": "medium",
+                        "effort": "medium",
+                        "action": "Consider promoting these items or removing them if no longer needed",
+                    })
             
-        return high_abandonment_items
-    except Exception as e:
-        logger.error(f"Error getting high abandonment items: {str(e)}")
-        return []
-
-
-def _get_slow_fulfillment_items(config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """
-    Get catalog items with slow fulfillment times.
-    
-    Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        category_id: Optional category ID to filter by
-        
-    Returns:
-        List of catalog items with slow fulfillment times
-    """
-    # In a real implementation, this would query the ServiceNow API for fulfillment statistics
-    # and identify items with slow fulfillment times. For this example, we'll simulate the response.
-    
-    # First, get all active items
-    url = f"{config.instance_url}/api/now/table/sc_cat_item"
-    query_params = {
-        "sysparm_query": "active=true",
-        "sysparm_fields": "sys_id,name,short_description,category",
-        "sysparm_limit": 50
-    }
-    
-    if category_id:
-        query_params["sysparm_query"] += f"^category={category_id}"
-    
-    headers = auth_manager.get_headers()
-    headers["Accept"] = "application/json"
-    
-    try:
-        response = requests.get(url, headers=headers, params=query_params)
-        response.raise_for_status()
-        result = response.json()
-        items = result.get("result", [])
-        
-        # For this example, we'll randomly select a subset of items as "slow fulfillment"
-        # In a real implementation, this would be based on actual fulfillment statistics
-        import random
-        slow_fulfillment_items = random.sample(items, min(len(items), 4))
-        
-        # Add simulated fulfillment times
-        avg_fulfillment_time = 2.5  # days
-        for item in slow_fulfillment_items:
-            item["avg_fulfillment_time"] = round(random.uniform(5, 10), 1)  # days
-            item["avg_fulfillment_time_vs_catalog"] = round(item["avg_fulfillment_time"] / avg_fulfillment_time, 1)
+            elif rec_type == "high_abandonment":
+                items = _get_high_abandonment_items(config, auth_manager, category_id)
+                if items:
+                    recommendations.append({
+                        "type": "high_abandonment",
+                        "title": "High Abandonment Rate Items",
+                        "description": "Items that are frequently added to cart but not ordered",
+                        "items": items,
+                        "impact": "high",
+                        "effort": "medium",
+                        "action": "Simplify the request process or improve the item description",
+                    })
             
-        return slow_fulfillment_items
-    except Exception as e:
-        logger.error(f"Error getting slow fulfillment items: {str(e)}")
-        return []
-
-
-def _get_poor_description_items(config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """
-    Get catalog items with poor description quality.
-    
-    Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        category_id: Optional category ID to filter by
-        
-    Returns:
-        List of catalog items with poor description quality
-    """
-    # Build query to get items with short or empty descriptions
-    url = f"{config.instance_url}/api/now/table/sc_cat_item"
-    query_params = {
-        "sysparm_query": "active=true^short_descriptionISEMPTY^ORshort_descriptionLIKENo description^ORLENGTHOFshort_description<30",
-        "sysparm_fields": "sys_id,name,short_description,category",
-        "sysparm_limit": 50
-    }
-    
-    if category_id:
-        query_params["sysparm_query"] += f"^category={category_id}"
-    
-    headers = auth_manager.get_headers()
-    headers["Accept"] = "application/json"
-    
-    try:
-        response = requests.get(url, headers=headers, params=query_params)
-        response.raise_for_status()
-        result = response.json()
-        items = result.get("result", [])
-        
-        # Add a quality score
-        for item in items:
-            desc = item.get("short_description", "")
-            if not desc:
-                item["description_quality"] = 0
-                item["quality_issues"] = ["Missing description"]
-            elif len(desc) < 30:
-                item["description_quality"] = 30
-                item["quality_issues"] = ["Description too short", "Lacks detail"]
-            elif "please" in desc.lower() or "click" in desc.lower():
-                item["description_quality"] = 50
-                item["quality_issues"] = ["Uses instructional language instead of descriptive"]
+            elif rec_type == "slow_fulfillment":
+                items = _get_slow_fulfillment_items(config, auth_manager, category_id)
+                if items:
+                    recommendations.append({
+                        "type": "slow_fulfillment",
+                        "title": "Slow Fulfillment Items",
+                        "description": "Items that take longer than average to fulfill",
+                        "items": items,
+                        "impact": "high",
+                        "effort": "high",
+                        "action": "Review the fulfillment process and identify bottlenecks",
+                    })
             
-        return items
-    except Exception as e:
-        logger.error(f"Error getting poor description items: {str(e)}")
-        return []
-
-
-def update_catalog_item(
-    config: ServerConfig,
-    auth_manager: AuthManager,
-    params: UpdateCatalogItemParams,
-) -> Dict[str, Any]:
-    """
-    Update a service catalog item.
-
-    Args:
-        config: Server configuration
-        auth_manager: Authentication manager
-        params: Parameters for updating the catalog item
-
-    Returns:
-        Dictionary containing the updated catalog item
-    """
-    logger.info(f"Updating catalog item: {params.item_id}")
-    
-    # Build the API URL
-    url = f"{config.instance_url}/api/now/table/sc_cat_item/{params.item_id}"
-    
-    # Prepare the request body with only the fields that are provided
-    body = {}
-    if params.name is not None:
-        body["name"] = params.name
-    if params.short_description is not None:
-        body["short_description"] = params.short_description
-    if params.description is not None:
-        body["description"] = params.description
-    if params.category is not None:
-        body["category"] = params.category
-    if params.price is not None:
-        body["price"] = params.price
-    if params.active is not None:
-        body["active"] = str(params.active).lower()
-    if params.order is not None:
-        body["order"] = params.order
-    
-    # Make the API request
-    headers = auth_manager.get_headers()
-    headers["Accept"] = "application/json"
-    headers["Content-Type"] = "application/json"
-    
-    try:
-        response = requests.patch(url, headers=headers, json=body)
-        response.raise_for_status()
-        
-        # Process the response
-        result = response.json()
-        item = result.get("result", {})
-        
-        if not item:
-            return {
-                "success": False,
-                "message": f"Failed to update catalog item: {params.item_id}",
-                "data": None,
-            }
-        
-        # Format the response
-        formatted_item = {
-            "sys_id": item.get("sys_id", ""),
-            "name": item.get("name", ""),
-            "short_description": item.get("short_description", ""),
-            "description": item.get("description", ""),
-            "category": item.get("category", ""),
-            "price": item.get("price", ""),
-            "active": item.get("active", ""),
-            "order": item.get("order", ""),
-        }
+            elif rec_type == "description_quality":
+                items = _get_poor_description_items(config, auth_manager, category_id)
+                if items:
+                    recommendations.append({
+                        "type": "description_quality",
+                        "title": "Poor Description Quality",
+                        "description": "Items with missing, short, or low-quality descriptions",
+                        "items": items,
+                        "impact": "medium",
+                        "effort": "low",
+                        "action": "Improve the descriptions to better explain the item's purpose and benefits",
+                    })
         
         return {
             "success": True,
-            "message": f"Successfully updated catalog item: {item.get('name', '')}",
-            "data": formatted_item,
+            "recommendations": recommendations,
         }
     
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating catalog item: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error getting optimization recommendations: {e}")
+        return {
+            "success": False,
+            "message": f"Error getting optimization recommendations: {str(e)}",
+            "recommendations": [],
+        }
+
+
+def update_catalog_item(
+    config: ServerConfig, auth_manager: AuthManager, params: UpdateCatalogItemParams
+) -> Dict:
+    """
+    Update a catalog item.
+
+    Args:
+        config: The server configuration
+        auth_manager: The authentication manager
+        params: The parameters for updating the catalog item
+
+    Returns:
+        A dictionary containing the result of the update operation
+    """
+    logger.info(f"Updating catalog item: {params.item_id}")
+    
+    try:
+        # Build the request body with only the provided parameters
+        body = {}
+        if params.name is not None:
+            body["name"] = params.name
+        if params.short_description is not None:
+            body["short_description"] = params.short_description
+        if params.description is not None:
+            body["description"] = params.description
+        if params.category is not None:
+            body["category"] = params.category
+        if params.price is not None:
+            body["price"] = params.price
+        if params.active is not None:
+            body["active"] = str(params.active).lower()
+        if params.order is not None:
+            body["order"] = str(params.order)
+        
+        # Make the API request
+        url = f"{config.instance_url}/api/now/table/sc_cat_item/{params.item_id}"
+        headers = auth_manager.get_headers()
+        headers["Content-Type"] = "application/json"
+        
+        response = requests.patch(url, headers=headers, json=body)
+        response.raise_for_status()
+        
+        return {
+            "success": True,
+            "message": "Catalog item updated successfully",
+            "data": response.json()["result"],
+        }
+    
+    except Exception as e:
+        logger.error(f"Error updating catalog item: {e}")
         return {
             "success": False,
             "message": f"Error updating catalog item: {str(e)}",
             "data": None,
-        } 
+        }
+
+
+def _get_inactive_items(
+    config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Get inactive catalog items.
+
+    Args:
+        config: The server configuration
+        auth_manager: The authentication manager
+        category_id: Optional category ID to filter by
+
+    Returns:
+        A list of inactive catalog items
+    """
+    try:
+        # Build the query
+        query = "active=false"
+        if category_id:
+            query += f"^category={category_id}"
+        
+        # Make the API request
+        url = f"{config.instance_url}/api/now/table/sc_cat_item"
+        headers = auth_manager.get_headers()
+        params = {
+            "sysparm_query": query,
+            "sysparm_fields": "sys_id,name,short_description,category",
+            "sysparm_limit": "50",
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        return response.json()["result"]
+    
+    except Exception as e:
+        logger.error(f"Error getting inactive items: {e}")
+        return []
+
+
+def _get_low_usage_items(
+    config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Get catalog items with low usage.
+
+    Args:
+        config: The server configuration
+        auth_manager: The authentication manager
+        category_id: Optional category ID to filter by
+
+    Returns:
+        A list of catalog items with low usage
+    """
+    try:
+        # Build the query
+        query = "active=true"
+        if category_id:
+            query += f"^category={category_id}"
+        
+        # Make the API request
+        url = f"{config.instance_url}/api/now/table/sc_cat_item"
+        headers = auth_manager.get_headers()
+        params = {
+            "sysparm_query": query,
+            "sysparm_fields": "sys_id,name,short_description,category",
+            "sysparm_limit": "50",
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        # In a real implementation, we would query the request table to get actual usage data
+        # For this example, we'll simulate low usage with random data
+        items = response.json()["result"]
+        
+        # Select a random subset of items to mark as low usage
+        low_usage_items = random.sample(items, min(len(items), 5))
+        
+        # Add usage data to the items
+        for item in low_usage_items:
+            item["order_count"] = random.randint(1, 5)  # Low number of orders
+        
+        return low_usage_items
+    
+    except Exception as e:
+        logger.error(f"Error getting low usage items: {e}")
+        return []
+
+
+def _get_high_abandonment_items(
+    config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Get catalog items with high abandonment rates.
+
+    Args:
+        config: The server configuration
+        auth_manager: The authentication manager
+        category_id: Optional category ID to filter by
+
+    Returns:
+        A list of catalog items with high abandonment rates
+    """
+    try:
+        # Build the query
+        query = "active=true"
+        if category_id:
+            query += f"^category={category_id}"
+        
+        # Make the API request
+        url = f"{config.instance_url}/api/now/table/sc_cat_item"
+        headers = auth_manager.get_headers()
+        params = {
+            "sysparm_query": query,
+            "sysparm_fields": "sys_id,name,short_description,category",
+            "sysparm_limit": "50",
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        # In a real implementation, we would query the request table to get actual abandonment data
+        # For this example, we'll simulate high abandonment with random data
+        items = response.json()["result"]
+        
+        # Select a random subset of items to mark as high abandonment
+        high_abandonment_items = random.sample(items, min(len(items), 5))
+        
+        # Add abandonment data to the items
+        for item in high_abandonment_items:
+            abandonment_rate = random.randint(40, 80)  # High abandonment rate (40-80%)
+            cart_adds = random.randint(20, 100)  # Number of cart adds
+            orders = int(cart_adds * (1 - abandonment_rate / 100))  # Number of completed orders
+            
+            item["abandonment_rate"] = abandonment_rate
+            item["cart_adds"] = cart_adds
+            item["orders"] = orders
+        
+        return high_abandonment_items
+    
+    except Exception as e:
+        logger.error(f"Error getting high abandonment items: {e}")
+        return []
+
+
+def _get_slow_fulfillment_items(
+    config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Get catalog items with slow fulfillment times.
+
+    Args:
+        config: The server configuration
+        auth_manager: The authentication manager
+        category_id: Optional category ID to filter by
+
+    Returns:
+        A list of catalog items with slow fulfillment times
+    """
+    try:
+        # Build the query
+        query = "active=true"
+        if category_id:
+            query += f"^category={category_id}"
+        
+        # Make the API request
+        url = f"{config.instance_url}/api/now/table/sc_cat_item"
+        headers = auth_manager.get_headers()
+        params = {
+            "sysparm_query": query,
+            "sysparm_fields": "sys_id,name,short_description,category",
+            "sysparm_limit": "50",
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        # In a real implementation, we would query the request table to get actual fulfillment data
+        # For this example, we'll simulate slow fulfillment with random data
+        items = response.json()["result"]
+        
+        # Select a random subset of items to mark as slow fulfillment
+        slow_fulfillment_items = random.sample(items, min(len(items), 5))
+        
+        # Add fulfillment data to the items
+        catalog_avg_time = 2.5  # Average fulfillment time for the catalog (in days)
+        
+        for item in slow_fulfillment_items:
+            # Generate a fulfillment time that's significantly higher than the catalog average
+            fulfillment_time = random.uniform(5.0, 10.0)  # 5-10 days
+            
+            item["avg_fulfillment_time"] = fulfillment_time
+            item["avg_fulfillment_time_vs_catalog"] = round(fulfillment_time / catalog_avg_time, 1)
+        
+        return slow_fulfillment_items
+    
+    except Exception as e:
+        logger.error(f"Error getting slow fulfillment items: {e}")
+        return []
+
+
+def _get_poor_description_items(
+    config: ServerConfig, auth_manager: AuthManager, category_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Get catalog items with poor description quality.
+
+    Args:
+        config: The server configuration
+        auth_manager: The authentication manager
+        category_id: Optional category ID to filter by
+
+    Returns:
+        A list of catalog items with poor description quality
+    """
+    try:
+        # Build the query
+        query = "active=true"
+        if category_id:
+            query += f"^category={category_id}"
+        
+        # Make the API request
+        url = f"{config.instance_url}/api/now/table/sc_cat_item"
+        headers = auth_manager.get_headers()
+        params = {
+            "sysparm_query": query,
+            "sysparm_fields": "sys_id,name,short_description,category",
+            "sysparm_limit": "50",
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        items = response.json()["result"]
+        poor_description_items = []
+        
+        # Analyze each item's description quality
+        for item in items:
+            description = item.get("short_description", "")
+            quality_issues = []
+            quality_score = 100  # Start with perfect score
+            
+            # Check for empty description
+            if not description:
+                quality_issues.append("Missing description")
+                quality_score = 0
+            else:
+                # Check for short description
+                if len(description) < 30:
+                    quality_issues.append("Description too short")
+                    quality_issues.append("Lacks detail")
+                    quality_score -= 70
+                
+                # Check for instructional language instead of descriptive
+                if "click here" in description.lower() or "request this" in description.lower():
+                    quality_issues.append("Uses instructional language instead of descriptive")
+                    quality_score -= 50
+                
+                # Check for vague terms
+                vague_terms = ["etc", "and more", "and so on", "stuff", "things"]
+                if any(term in description.lower() for term in vague_terms):
+                    quality_issues.append("Contains vague terms")
+                    quality_score -= 30
+            
+            # Ensure score is between 0 and 100
+            quality_score = max(0, min(100, quality_score))
+            
+            # Add to poor description items if quality is below threshold
+            if quality_score < 80:
+                item["description_quality"] = quality_score
+                item["quality_issues"] = quality_issues
+                poor_description_items.append(item)
+        
+        return poor_description_items
+    
+    except Exception as e:
+        logger.error(f"Error getting poor description items: {e}")
+        return [] 

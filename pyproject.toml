@@ -61,4 +61,11 @@ disallow_incomplete_defs = true
 line-length = 100
 target-version = "py311"
 select = ["E", "F", "B", "I"]
-ignore = [] 
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--ignore=examples" 
