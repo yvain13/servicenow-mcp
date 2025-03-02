@@ -69,45 +69,36 @@ The ServiceNow MCP server provides the following tools:
 #### Incident Management Tools
 
 1. **create_incident** - Create a new incident in ServiceNow
-   - Parameters: short_description, description, caller_id, category, subcategory, priority, impact, urgency, assigned_to, assignment_group
-
 2. **update_incident** - Update an existing incident in ServiceNow
-   - Parameters: incident_id, short_description, description, state, category, subcategory, priority, impact, urgency, assigned_to, assignment_group, work_notes, close_notes, close_code
-
 3. **add_comment** - Add a comment to an incident in ServiceNow
-   - Parameters: incident_id, comment, is_work_note
-
 4. **resolve_incident** - Resolve an incident in ServiceNow
-   - Parameters: incident_id, resolution_code, resolution_notes
-
 5. **list_incidents** - List incidents from ServiceNow
-   - Parameters: limit, offset, state, assigned_to, category, query
 
 #### Service Catalog Tools
 
 1. **list_catalog_items** - List service catalog items from ServiceNow
-   - Parameters: limit, offset, category, query, active
-
 2. **get_catalog_item** - Get a specific service catalog item from ServiceNow
-   - Parameters: item_id
-
 3. **list_catalog_categories** - List service catalog categories from ServiceNow
-   - Parameters: limit, offset, query, active
 
 #### Catalog Optimization Tools
 
 1. **get_optimization_recommendations** - Get recommendations for optimizing the service catalog
-   - Parameters: category_id (optional), recommendation_types (list of types to include)
-   - Recommendation types: inactive_items, low_usage, high_abandonment, slow_fulfillment, description_quality
-
 2. **update_catalog_item** - Update a service catalog item
-   - Parameters: item_id, name, short_description, description, category, price, active, order
+
+#### Change Management Tools
+
+1. **create_change_request** - Create a new change request in ServiceNow
+2. **update_change_request** - Update an existing change request
+3. **list_change_requests** - List change requests with filtering options
+4. **get_change_request_details** - Get detailed information about a specific change request
+5. **add_change_task** - Add a task to a change request
+6. **submit_change_for_approval** - Submit a change request for approval
+7. **approve_change** - Approve a change request
+8. **reject_change** - Reject a change request
 
 ### Using the MCP CLI
 
 The ServiceNow MCP server can be installed with the MCP CLI, which provides a convenient way to register the server with Claude.
-
-#### Installing the Server with MCP CLI
 
 ```bash
 # Install the ServiceNow MCP server with environment variables from .env file
@@ -142,8 +133,6 @@ To configure the ServiceNow MCP server in Claude Desktop:
 }
 ```
 
-Make sure to replace the paths and credentials with your actual values.
-
 2. Restart Claude Desktop to apply the changes
 
 ### Example Usage with Claude
@@ -155,8 +144,7 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Update the priority of incident INC0010001 to high"
 - "Add a comment to incident INC0010001 saying the issue is being investigated"
 - "Resolve incident INC0010001 with a note that the server was restarted"
-- "List all high priority incidents"
-- "Show me the details of incident INC0010001"
+- "List all high priority incidents assigned to the Network team"
 
 #### Service Catalog Examples
 - "Show me all items in the service catalog"
@@ -169,9 +157,24 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Analyze our service catalog and identify opportunities for improvement"
 - "Find catalog items with poor descriptions that need improvement"
 - "Identify catalog items with low usage that we might want to retire"
-- "Find catalog items with high abandonment rates that might need simplification"
-- "Update the description of the laptop request catalog item to be more clear"
+- "Find catalog items with high abandonment rates"
 - "Optimize our Hardware category to improve user experience"
+
+#### Change Management Examples
+- "Create a change request for server maintenance to apply security patches tomorrow night"
+- "Schedule a database upgrade for next Tuesday from 2 AM to 4 AM"
+- "Add a task to the server maintenance change for pre-implementation checks"
+- "Submit the server maintenance change for approval"
+- "Approve the database upgrade change with comment: implementation plan looks thorough"
+- "Show me all emergency changes scheduled for this week"
+- "List all changes assigned to the Network team"
+
+### Example Scripts
+
+The repository includes example scripts that demonstrate how to use the tools:
+
+- **examples/catalog_optimization_example.py**: Demonstrates how to analyze and improve the ServiceNow Service Catalog
+- **examples/change_management_demo.py**: Shows how to create and manage change requests in ServiceNow
 
 ## Authentication Methods
 
@@ -201,69 +204,45 @@ SERVICENOW_API_KEY=your-api-key
 
 ## Development
 
-### Running Tests
-
-```
-pytest
-```
-
-### Example Scripts
-
-The repository includes several example scripts to demonstrate how to use the ServiceNow MCP server:
-
-#### Incident Management Demo
-
-The `examples/claude_incident_demo.py` script demonstrates how to use the ServiceNow MCP server with Claude Desktop to manage incidents:
-
-```bash
-python examples/claude_incident_demo.py
-```
-
-#### Service Catalog Integration Test
-
-The `examples/catalog_integration_test.py` script demonstrates how to use the catalog tools directly to interact with the ServiceNow Service Catalog:
-
-```bash
-python examples/catalog_integration_test.py
-```
-
-#### Service Catalog Demo
-
-The `examples/claude_catalog_demo.py` script demonstrates how to use the ServiceNow MCP server with Claude Desktop to interact with the ServiceNow Service Catalog:
-
-```bash
-python examples/claude_catalog_demo.py
-```
-
-#### Catalog Optimization Example
-
-The `examples/catalog_optimization_example.py` script demonstrates how to use the catalog optimization tools to analyze and improve the ServiceNow Service Catalog:
-
-```bash
-python examples/catalog_optimization_example.py
-```
-
-This script can also automatically update poor descriptions with the `--update-descriptions` flag:
-
-```bash
-python examples/catalog_optimization_example.py --update-descriptions
-```
-
 ### Documentation
 
 Additional documentation is available in the `docs` directory:
 
 - [Catalog Integration](docs/catalog.md) - Detailed information about the Service Catalog integration
 - [Catalog Optimization](docs/catalog_optimization_plan.md) - Detailed plan for catalog optimization features
+- [Change Management](docs/change_management.md) - Detailed information about the Change Management tools
+
+### Troubleshooting
+
+#### Common Errors with Change Management Tools
+
+1. **Error: `argument after ** must be a mapping, not CreateChangeRequestParams`**
+   - This error occurs when you pass a `CreateChangeRequestParams` object instead of a dictionary to the `create_change_request` function.
+   - Solution: Make sure you're passing a dictionary with the parameters, not a Pydantic model object.
+   - Note: The change management tools have been updated to handle this error automatically. The functions will now attempt to unwrap parameters if they're incorrectly wrapped or passed as a Pydantic model object.
+
+2. **Error: `Missing required parameter 'type'`**
+   - This error occurs when you don't provide all required parameters for creating a change request.
+   - Solution: Make sure to include all required parameters. For `create_change_request`, both `short_description` and `type` are required.
+
+3. **Error: `Invalid value for parameter 'type'`**
+   - This error occurs when you provide an invalid value for the `type` parameter.
+   - Solution: Use one of the valid values: "normal", "standard", or "emergency".
+
+4. **Error: `Cannot find get_headers method in either auth_manager or server_config`**
+   - This error occurs when the parameters are passed in the wrong order or when using objects that don't have the required methods.
+   - Solution: Make sure you're passing the `auth_manager` and `server_config` parameters in the correct order. The functions have been updated to handle parameter swapping automatically.
 
 ### Contributing
 
+Contributions are welcome! Please feel free to submit a Pull Request.
+
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -am 'Add some feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+### License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
