@@ -12,6 +12,7 @@ This project implements an MCP server that enables Claude to connect to ServiceN
 - Query ServiceNow records and tables
 - Create, update, and delete ServiceNow records
 - Execute ServiceNow scripts and workflows
+- Access and query the ServiceNow Service Catalog
 - Debug mode for troubleshooting
 
 ## Installation
@@ -64,6 +65,8 @@ SERVICENOW_INSTANCE_URL=https://your-instance.service-now.com SERVICENOW_USERNAM
 
 The ServiceNow MCP server provides the following tools:
 
+#### Incident Management Tools
+
 1. **create_incident** - Create a new incident in ServiceNow
    - Parameters: short_description, description, caller_id, category, subcategory, priority, impact, urgency, assigned_to, assignment_group
 
@@ -78,6 +81,17 @@ The ServiceNow MCP server provides the following tools:
 
 5. **list_incidents** - List incidents from ServiceNow
    - Parameters: limit, offset, state, assigned_to, category, query
+
+#### Service Catalog Tools
+
+1. **list_catalog_items** - List service catalog items from ServiceNow
+   - Parameters: limit, offset, category, query, active
+
+2. **get_catalog_item** - Get a specific service catalog item from ServiceNow
+   - Parameters: item_id
+
+3. **list_catalog_categories** - List service catalog categories from ServiceNow
+   - Parameters: limit, offset, query, active
 
 ### Using the MCP CLI
 
@@ -126,12 +140,20 @@ Make sure to replace the paths and credentials with your actual values.
 
 Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Claude to perform actions like:
 
+#### Incident Management Examples
 - "Create a new incident for a network outage in the east region"
 - "Update the priority of incident INC0010001 to high"
 - "Add a comment to incident INC0010001 saying the issue is being investigated"
 - "Resolve incident INC0010001 with a note that the server was restarted"
 - "List all high priority incidents"
 - "Show me the details of incident INC0010001"
+
+#### Service Catalog Examples
+- "Show me all items in the service catalog"
+- "List all service catalog categories"
+- "Get details about the laptop request catalog item"
+- "Show me all catalog items in the Hardware category"
+- "Search for 'software' in the service catalog"
 
 ## Authentication Methods
 
@@ -166,6 +188,40 @@ SERVICENOW_API_KEY=your-api-key
 ```
 pytest
 ```
+
+### Example Scripts
+
+The repository includes several example scripts to demonstrate how to use the ServiceNow MCP server:
+
+#### Incident Management Demo
+
+The `examples/claude_incident_demo.py` script demonstrates how to use the ServiceNow MCP server with Claude Desktop to manage incidents:
+
+```bash
+python examples/claude_incident_demo.py
+```
+
+#### Service Catalog Integration Test
+
+The `examples/catalog_integration_test.py` script demonstrates how to use the catalog tools directly to interact with the ServiceNow Service Catalog:
+
+```bash
+python examples/catalog_integration_test.py
+```
+
+#### Service Catalog Demo
+
+The `examples/claude_catalog_demo.py` script demonstrates how to use the ServiceNow MCP server with Claude Desktop to interact with the ServiceNow Service Catalog:
+
+```bash
+python examples/claude_catalog_demo.py
+```
+
+### Documentation
+
+Additional documentation is available in the `docs` directory:
+
+- [Catalog Integration](docs/catalog.md) - Detailed information about the Service Catalog integration
 
 ### Contributing
 

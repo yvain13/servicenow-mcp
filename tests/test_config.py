@@ -2,8 +2,6 @@
 Tests for the configuration module.
 """
 
-import pytest
-
 from servicenow_mcp.utils.config import (
     ApiKeyConfig,
     AuthConfig,

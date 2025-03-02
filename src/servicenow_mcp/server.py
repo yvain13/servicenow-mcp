@@ -11,13 +11,32 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 from servicenow_mcp.auth.auth_manager import AuthManager
+from servicenow_mcp.resources.catalog import (
+    CatalogCategoryListParams,
+    CatalogListParams,
+    CatalogResource,
+)
 from servicenow_mcp.resources.incidents import IncidentListParams, IncidentResource
+from servicenow_mcp.tools.catalog_tools import (
+    GetCatalogItemParams,
+    ListCatalogCategoriesParams,
+    ListCatalogItemsParams,
+)
+from servicenow_mcp.tools.catalog_tools import (
+    get_catalog_item as get_catalog_item_tool,
+)
+from servicenow_mcp.tools.catalog_tools import (
+    list_catalog_categories as list_catalog_categories_tool,
+)
+from servicenow_mcp.tools.catalog_tools import (
+    list_catalog_items as list_catalog_items_tool,
+)
 from servicenow_mcp.tools.incident_tools import (
     AddCommentParams,
     CreateIncidentParams,
+    ListIncidentsParams,
     ResolveIncidentParams,
     UpdateIncidentParams,
-    ListIncidentsParams,
 )
 from servicenow_mcp.tools.incident_tools import (
     add_comment as add_comment_tool,
@@ -26,13 +45,13 @@ from servicenow_mcp.tools.incident_tools import (
     create_incident as create_incident_tool,
 )
 from servicenow_mcp.tools.incident_tools import (
+    list_incidents as list_incidents_tool,
+)
+from servicenow_mcp.tools.incident_tools import (
     resolve_incident as resolve_incident_tool,
 )
 from servicenow_mcp.tools.incident_tools import (
     update_incident as update_incident_tool,
-)
-from servicenow_mcp.tools.incident_tools import (
-    list_incidents as list_incidents_tool,
 )
 from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
 
@@ -83,6 +102,28 @@ class ServiceNowMCP:
         def get_incident(incident_id: str) -> str:
             """Get a specific incident from ServiceNow by ID or number"""
             return incident_resource.get_incident(incident_id)
+            
+        # Register catalog resources
+        catalog_resource = CatalogResource(self.config, self.auth_manager)
+        
+        @self.mcp_server.resource("catalog://items")
+        async def list_catalog_items() -> str:
+            """List catalog items from ServiceNow"""
+            # Since there's no URI parameter, we pass an empty params object
+            items = await catalog_resource.list_catalog_items(CatalogListParams())
+            return items
+            
+        @self.mcp_server.resource("catalog://categories")
+        async def list_catalog_categories() -> str:
+            """List catalog categories from ServiceNow"""
+            # Since there's no URI parameter, we pass an empty params object
+            categories = await catalog_resource.list_catalog_categories(CatalogCategoryListParams())
+            return categories
+            
+        @self.mcp_server.resource("catalog://{item_id}")
+        async def get_catalog_item(item_id: str) -> str:
+            """Get a specific catalog item from ServiceNow by ID"""
+            return await catalog_resource.get_catalog_item(item_id)
 
     def _register_tools(self):
         """Register all ServiceNow tools with the MCP server."""
@@ -112,6 +153,22 @@ class ServiceNowMCP:
         def list_incidents(params: ListIncidentsParams) -> str:
             """List incidents from ServiceNow"""
             return list_incidents_tool(self.config, self.auth_manager, params)
+            
+        # Register catalog tools
+        @self.mcp_server.tool()
+        def list_catalog_items(params: ListCatalogItemsParams) -> str:
+            """List service catalog items from ServiceNow"""
+            return list_catalog_items_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def get_catalog_item(params: GetCatalogItemParams) -> str:
+            """Get a specific service catalog item from ServiceNow"""
+            return get_catalog_item_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def list_catalog_categories(params: ListCatalogCategoriesParams) -> str:
+            """List service catalog categories from ServiceNow"""
+            return list_catalog_categories_tool(self.config, self.auth_manager, params)
 
     def start(self):
         """Start the MCP server."""
@@ -181,21 +238,13 @@ password = os.getenv("SERVICENOW_PASSWORD")
 # Create the server instance with a standard variable name
 # This is the variable that MCP CLI will look for
 if instance_url and username and password:
-    server = create_servicenow_mcp(
-        instance_url=instance_url,
-        username=username,
-        password=password
-    )
+    server = create_servicenow_mcp(instance_url=instance_url, username=username, password=password)
 else:
     # Create a dummy server with default values for MCP CLI to discover
     # The actual configuration will be loaded from environment variables when run
-    server = ServiceNowMCP({
-        "instance_url": "https://example.service-now.com",
-        "auth": {
-            "type": "basic",
-            "basic": {
-                "username": "admin",
-                "password": "password"
-            }
+    server = ServiceNowMCP(
+        {
+            "instance_url": "https://example.service-now.com",
+            "auth": {"type": "basic", "basic": {"username": "admin", "password": "password"}},
         }
-    })
+    )
