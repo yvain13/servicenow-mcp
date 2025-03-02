@@ -96,6 +96,21 @@ The ServiceNow MCP server provides the following tools:
 7. **approve_change** - Approve a change request
 8. **reject_change** - Reject a change request
 
+#### Workflow Management Tools
+
+1. **list_workflows** - List workflows from ServiceNow
+2. **get_workflow_details** - Get detailed information about a specific workflow
+3. **list_workflow_versions** - List all versions of a specific workflow
+4. **get_workflow_activities** - Get all activities in a workflow
+5. **create_workflow** - Create a new workflow in ServiceNow
+6. **update_workflow** - Update an existing workflow
+7. **activate_workflow** - Activate a workflow
+8. **deactivate_workflow** - Deactivate a workflow
+9. **add_workflow_activity** - Add a new activity to a workflow
+10. **update_workflow_activity** - Update an existing activity in a workflow
+11. **delete_workflow_activity** - Delete an activity from a workflow
+12. **reorder_workflow_activities** - Change the order of activities in a workflow
+
 ### Using the MCP CLI
 
 The ServiceNow MCP server can be installed with the MCP CLI, which provides a convenient way to register the server with Claude.
@@ -169,6 +184,20 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Show me all emergency changes scheduled for this week"
 - "List all changes assigned to the Network team"
 
+#### Workflow Management Examples
+- "Show me all active workflows in ServiceNow"
+- "Get details about the incident approval workflow"
+- "List all versions of the change request workflow"
+- "Show me all activities in the service catalog request workflow"
+- "Create a new workflow for handling software license requests"
+- "Update the description of the incident escalation workflow"
+- "Activate the new employee onboarding workflow"
+- "Deactivate the old password reset workflow"
+- "Add an approval activity to the software license request workflow"
+- "Update the notification activity in the incident escalation workflow"
+- "Delete the unnecessary activity from the change request workflow"
+- "Reorder the activities in the service catalog request workflow"
+
 ### Example Scripts
 
 The repository includes example scripts that demonstrate how to use the tools:
@@ -211,6 +240,7 @@ Additional documentation is available in the `docs` directory:
 - [Catalog Integration](docs/catalog.md) - Detailed information about the Service Catalog integration
 - [Catalog Optimization](docs/catalog_optimization_plan.md) - Detailed plan for catalog optimization features
 - [Change Management](docs/change_management.md) - Detailed information about the Change Management tools
+- [Workflow Management](docs/workflow_management.md) - Detailed information about the Workflow Management tools
 
 ### Troubleshooting
 
