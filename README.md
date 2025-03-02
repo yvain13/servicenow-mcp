@@ -13,6 +13,7 @@ This project implements an MCP server that enables Claude to connect to ServiceN
 - Create, update, and delete ServiceNow records
 - Execute ServiceNow scripts and workflows
 - Access and query the ServiceNow Service Catalog
+- Analyze and optimize the ServiceNow Service Catalog
 - Debug mode for troubleshooting
 
 ## Installation
@@ -93,6 +94,15 @@ The ServiceNow MCP server provides the following tools:
 3. **list_catalog_categories** - List service catalog categories from ServiceNow
    - Parameters: limit, offset, query, active
 
+#### Catalog Optimization Tools
+
+1. **get_optimization_recommendations** - Get recommendations for optimizing the service catalog
+   - Parameters: category_id (optional), recommendation_types (list of types to include)
+   - Recommendation types: inactive_items, low_usage, high_abandonment, slow_fulfillment, description_quality
+
+2. **update_catalog_item** - Update a service catalog item
+   - Parameters: item_id, name, short_description, description, category, price, active, order
+
 ### Using the MCP CLI
 
 The ServiceNow MCP server can be installed with the MCP CLI, which provides a convenient way to register the server with Claude.
@@ -154,6 +164,14 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Get details about the laptop request catalog item"
 - "Show me all catalog items in the Hardware category"
 - "Search for 'software' in the service catalog"
+
+#### Catalog Optimization Examples
+- "Analyze our service catalog and identify opportunities for improvement"
+- "Find catalog items with poor descriptions that need improvement"
+- "Identify catalog items with low usage that we might want to retire"
+- "Find catalog items with high abandonment rates that might need simplification"
+- "Update the description of the laptop request catalog item to be more clear"
+- "Optimize our Hardware category to improve user experience"
 
 ## Authentication Methods
 
@@ -217,11 +235,26 @@ The `examples/claude_catalog_demo.py` script demonstrates how to use the Service
 python examples/claude_catalog_demo.py
 ```
 
+#### Catalog Optimization Example
+
+The `examples/catalog_optimization_example.py` script demonstrates how to use the catalog optimization tools to analyze and improve the ServiceNow Service Catalog:
+
+```bash
+python examples/catalog_optimization_example.py
+```
+
+This script can also automatically update poor descriptions with the `--update-descriptions` flag:
+
+```bash
+python examples/catalog_optimization_example.py --update-descriptions
+```
+
 ### Documentation
 
 Additional documentation is available in the `docs` directory:
 
 - [Catalog Integration](docs/catalog.md) - Detailed information about the Service Catalog integration
+- [Catalog Optimization](docs/catalog_optimization_plan.md) - Detailed plan for catalog optimization features
 
 ### Contributing
 

@@ -31,6 +31,12 @@ from servicenow_mcp.tools.catalog_tools import (
 from servicenow_mcp.tools.catalog_tools import (
     list_catalog_items as list_catalog_items_tool,
 )
+from servicenow_mcp.tools.catalog_optimization import (
+    OptimizationRecommendationsParams,
+    UpdateCatalogItemParams,
+    get_optimization_recommendations as get_optimization_recommendations_tool,
+    update_catalog_item as update_catalog_item_tool,
+)
 from servicenow_mcp.tools.incident_tools import (
     AddCommentParams,
     CreateIncidentParams,
@@ -169,6 +175,17 @@ class ServiceNowMCP:
         def list_catalog_categories(params: ListCatalogCategoriesParams) -> str:
             """List service catalog categories from ServiceNow"""
             return list_catalog_categories_tool(self.config, self.auth_manager, params)
+            
+        # Register catalog optimization tools
+        @self.mcp_server.tool()
+        def get_optimization_recommendations(params: OptimizationRecommendationsParams) -> str:
+            """Get recommendations for optimizing the service catalog"""
+            return get_optimization_recommendations_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def update_catalog_item(params: UpdateCatalogItemParams) -> str:
+            """Update a service catalog item"""
+            return update_catalog_item_tool(self.config, self.auth_manager, params)
 
     def start(self):
         """Start the MCP server."""
