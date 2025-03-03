@@ -111,6 +111,16 @@ The ServiceNow MCP server provides the following tools:
 11. **delete_workflow_activity** - Delete an activity from a workflow
 12. **reorder_workflow_activities** - Change the order of activities in a workflow
 
+#### Changeset Management Tools
+
+1. **list_changesets** - List changesets from ServiceNow with filtering options
+2. **get_changeset_details** - Get detailed information about a specific changeset
+3. **create_changeset** - Create a new changeset in ServiceNow
+4. **update_changeset** - Update an existing changeset
+5. **commit_changeset** - Commit a changeset
+6. **publish_changeset** - Publish a changeset
+7. **add_file_to_changeset** - Add a file to a changeset
+
 ### Using the MCP CLI
 
 The ServiceNow MCP server can be installed with the MCP CLI, which provides a convenient way to register the server with Claude.
@@ -198,6 +208,17 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Delete the unnecessary activity from the change request workflow"
 - "Reorder the activities in the service catalog request workflow"
 
+#### Changeset Management Examples
+- "List all changesets in ServiceNow"
+- "Show me all changesets created by developer 'john.doe'"
+- "Get details about changeset 'sys_update_set_123'"
+- "Create a new changeset for the 'HR Portal' application"
+- "Update the description of changeset 'sys_update_set_123'"
+- "Commit changeset 'sys_update_set_123' with message 'Fixed login issue'"
+- "Publish changeset 'sys_update_set_123' to production"
+- "Add a file to changeset 'sys_update_set_123'"
+- "Show me all changes in changeset 'sys_update_set_123'"
+
 ### Example Scripts
 
 The repository includes example scripts that demonstrate how to use the tools:
@@ -241,6 +262,7 @@ Additional documentation is available in the `docs` directory:
 - [Catalog Optimization](docs/catalog_optimization_plan.md) - Detailed plan for catalog optimization features
 - [Change Management](docs/change_management.md) - Detailed information about the Change Management tools
 - [Workflow Management](docs/workflow_management.md) - Detailed information about the Workflow Management tools
+- [Changeset Management](docs/changeset_management.md) - Detailed information about the Changeset Management tools
 
 ### Troubleshooting
 

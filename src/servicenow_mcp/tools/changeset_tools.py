@@ -5,7 +5,7 @@ This module provides tools for managing changesets in ServiceNow.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import requests
 from pydantic import BaseModel, Field
@@ -79,7 +79,7 @@ class AddFileToChangesetParams(BaseModel):
 
 
 def _unwrap_and_validate_params(
-    params: Dict[str, Any], 
+    params: Union[Dict[str, Any], BaseModel], 
     model_class: Type[T], 
     required_fields: Optional[List[str]] = None
 ) -> Dict[str, Any]:
@@ -87,7 +87,7 @@ def _unwrap_and_validate_params(
     Unwrap and validate parameters.
 
     Args:
-        params: The parameters to unwrap and validate.
+        params: The parameters to unwrap and validate. Can be a dictionary or a Pydantic model.
         model_class: The Pydantic model class to validate against.
         required_fields: List of fields that must be present.
 
@@ -95,8 +95,18 @@ def _unwrap_and_validate_params(
         A dictionary with success status and validated parameters or error message.
     """
     try:
-        # Create model instance
-        model_instance = model_class(**params)
+        # Handle case where params is already a Pydantic model
+        if isinstance(params, BaseModel):
+            # If it's already the correct model class, use it directly
+            if isinstance(params, model_class):
+                model_instance = params
+            # Otherwise, convert to dict and create new instance
+            else:
+                model_instance = model_class(**params.dict())
+        # Handle dictionary case
+        else:
+            # Create model instance
+            model_instance = model_class(**params)
         
         # Check required fields
         if required_fields:
@@ -182,7 +192,7 @@ def _get_headers(auth_manager: AuthManager, server_config: ServerConfig) -> Opti
 def list_changesets(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], ListChangesetsParams],
 ) -> Dict[str, Any]:
     """
     List changesets from ServiceNow.
@@ -190,7 +200,7 @@ def list_changesets(
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for listing changesets.
+        params: The parameters for listing changesets. Can be a dictionary or a ListChangesetsParams object.
 
     Returns:
         A list of changesets.
@@ -276,18 +286,18 @@ def list_changesets(
 def get_changeset_details(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], GetChangesetDetailsParams],
 ) -> Dict[str, Any]:
     """
-    Get details of a specific changeset.
+    Get detailed information about a specific changeset.
 
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for getting changeset details.
+        params: The parameters for getting changeset details. Can be a dictionary or a GetChangesetDetailsParams object.
 
     Returns:
-        The changeset details.
+        Detailed information about the changeset.
     """
     # Unwrap and validate parameters
     result = _unwrap_and_validate_params(
@@ -358,7 +368,7 @@ def get_changeset_details(
 def create_changeset(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], CreateChangesetParams],
 ) -> Dict[str, Any]:
     """
     Create a new changeset in ServiceNow.
@@ -366,7 +376,7 @@ def create_changeset(
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for creating the changeset.
+        params: The parameters for creating a changeset. Can be a dictionary or a CreateChangesetParams object.
 
     Returns:
         The created changeset.
@@ -439,7 +449,7 @@ def create_changeset(
 def update_changeset(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], UpdateChangesetParams],
 ) -> Dict[str, Any]:
     """
     Update an existing changeset in ServiceNow.
@@ -447,7 +457,7 @@ def update_changeset(
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for updating the changeset.
+        params: The parameters for updating a changeset. Can be a dictionary or a UpdateChangesetParams object.
 
     Returns:
         The updated changeset.
@@ -528,7 +538,7 @@ def update_changeset(
 def commit_changeset(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], CommitChangesetParams],
 ) -> Dict[str, Any]:
     """
     Commit a changeset in ServiceNow.
@@ -536,10 +546,10 @@ def commit_changeset(
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for committing the changeset.
+        params: The parameters for committing a changeset. Can be a dictionary or a CommitChangesetParams object.
 
     Returns:
-        The result of the commit operation.
+        The committed changeset.
     """
     # Unwrap and validate parameters
     result = _unwrap_and_validate_params(
@@ -606,7 +616,7 @@ def commit_changeset(
 def publish_changeset(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], PublishChangesetParams],
 ) -> Dict[str, Any]:
     """
     Publish a changeset in ServiceNow.
@@ -614,10 +624,10 @@ def publish_changeset(
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for publishing the changeset.
+        params: The parameters for publishing a changeset. Can be a dictionary or a PublishChangesetParams object.
 
     Returns:
-        The result of the publish operation.
+        The published changeset.
     """
     # Unwrap and validate parameters
     result = _unwrap_and_validate_params(
@@ -684,7 +694,7 @@ def publish_changeset(
 def add_file_to_changeset(
     auth_manager: AuthManager,
     server_config: ServerConfig,
-    params: Dict[str, Any],
+    params: Union[Dict[str, Any], AddFileToChangesetParams],
 ) -> Dict[str, Any]:
     """
     Add a file to a changeset in ServiceNow.
@@ -692,7 +702,7 @@ def add_file_to_changeset(
     Args:
         auth_manager: The authentication manager.
         server_config: The server configuration.
-        params: The parameters for adding a file to the changeset.
+        params: The parameters for adding a file to a changeset. Can be a dictionary or a AddFileToChangesetParams object.
 
     Returns:
         The result of the add file operation.

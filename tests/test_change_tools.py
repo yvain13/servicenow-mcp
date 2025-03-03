@@ -2,23 +2,15 @@
 Tests for the change management tools.
 """
 
-import json
 import unittest
-from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import requests
 
 from servicenow_mcp.auth.auth_manager import AuthManager
 from servicenow_mcp.tools.change_tools import (
-    add_change_task,
-    approve_change,
     create_change_request,
-    get_change_request_details,
     list_change_requests,
-    reject_change,
-    submit_change_for_approval,
-    update_change_request,
 )
 from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
 
