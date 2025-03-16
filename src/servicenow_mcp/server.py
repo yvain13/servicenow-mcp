@@ -490,21 +490,20 @@ class ServiceNowMCP:
             return reject_change_tool(self.config, self.auth_manager, params)
 
         # Register workflow management tools
-        # DISABLED: Workflow management functionality
-        # @self.mcp_server.tool()
-        # def list_workflows(params: ListWorkflowsParams) -> str:
-        #     """List workflows from ServiceNow"""
-        #     return list_workflows_tool(self.config, self.auth_manager, params)
+        @self.mcp_server.tool()
+        def list_workflows(params: ListWorkflowsParams) -> str:
+            """List workflows from ServiceNow"""
+            return list_workflows_tool(self.config, self.auth_manager, params)
 
-        # @self.mcp_server.tool()
-        # def get_workflow_details(params: GetWorkflowDetailsParams) -> str:
-        #     """Get detailed information about a specific workflow"""
-        #     return get_workflow_details_tool(self.config, self.auth_manager, params)
+        @self.mcp_server.tool()
+        def get_workflow_details(params: GetWorkflowDetailsParams) -> str:
+            """Get detailed information about a specific workflow"""
+            return get_workflow_details_tool(self.config, self.auth_manager, params)
 
-        # @self.mcp_server.tool()
-        # def list_workflow_versions(params: ListWorkflowVersionsParams) -> str:
-        #     """List workflow versions from ServiceNow"""
-        #     return list_workflow_versions_tool(self.config, self.auth_manager, params)
+        @self.mcp_server.tool()
+        def list_workflow_versions(params: ListWorkflowVersionsParams) -> str:
+            """List workflow versions from ServiceNow"""
+            return list_workflow_versions_tool(self.config, self.auth_manager, params)
 
         @self.mcp_server.tool()
         def get_workflow_activities(params: GetWorkflowActivitiesParams) -> str:
