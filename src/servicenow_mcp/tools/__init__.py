@@ -15,6 +15,11 @@ from servicenow_mcp.tools.catalog_tools import (
     move_catalog_items,
     update_catalog_category,
 )
+from servicenow_mcp.tools.catalog_variables import (
+    create_catalog_item_variable,
+    list_catalog_item_variables,
+    update_catalog_item_variable,
+)
 from servicenow_mcp.tools.change_tools import (
     add_change_task,
     approve_change,
@@ -68,6 +73,7 @@ from servicenow_mcp.tools.user_tools import (
     update_group,
     add_group_members,
     remove_group_members,
+    list_groups,
 )
 from servicenow_mcp.tools.workflow_tools import (
     activate_workflow,
@@ -104,6 +110,9 @@ __all__ = [
     "move_catalog_items",
     "get_optimization_recommendations",
     "update_catalog_item",
+    "create_catalog_item_variable",
+    "list_catalog_item_variables",
+    "update_catalog_item_variable",
     
     # Change management tools
     "create_change_request",
@@ -165,6 +174,7 @@ __all__ = [
     "update_group",
     "add_group_members",
     "remove_group_members",
+    "list_groups",
     
     # Future tools
     # "create_problem",

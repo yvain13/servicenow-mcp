@@ -53,6 +53,20 @@ from servicenow_mcp.tools.catalog_optimization import (
     get_optimization_recommendations as get_optimization_recommendations_tool,
     update_catalog_item as update_catalog_item_tool,
 )
+from servicenow_mcp.tools.catalog_variables import (
+    CreateCatalogItemVariableParams,
+    ListCatalogItemVariablesParams,
+    UpdateCatalogItemVariableParams,
+)
+from servicenow_mcp.tools.catalog_variables import (
+    create_catalog_item_variable as create_catalog_item_variable_tool,
+)
+from servicenow_mcp.tools.catalog_variables import (
+    list_catalog_item_variables as list_catalog_item_variables_tool,
+)
+from servicenow_mcp.tools.catalog_variables import (
+    update_catalog_item_variable as update_catalog_item_variable_tool,
+)
 from servicenow_mcp.tools.incident_tools import (
     AddCommentParams,
     CreateIncidentParams,
@@ -259,6 +273,7 @@ from servicenow_mcp.tools.user_tools import (
     UpdateGroupParams,
     AddGroupMembersParams,
     RemoveGroupMembersParams,
+    ListGroupsParams,
 )
 from servicenow_mcp.tools.user_tools import (
     create_user as create_user_tool,
@@ -269,6 +284,7 @@ from servicenow_mcp.tools.user_tools import (
     update_group as update_group_tool,
     add_group_members as add_group_members_tool,
     remove_group_members as remove_group_members_tool,
+    list_groups as list_groups_tool,
 )
 
 # Set up logging
@@ -457,8 +473,36 @@ class ServiceNowMCP:
         def update_catalog_item(params: UpdateCatalogItemParams) -> str:
             """Update a service catalog item."""
             return json.dumps(
-                update_catalog_item_tool(self.config, self.auth_manager, params)
+                update_catalog_item_tool(
+                    self.config,
+                    self.auth_manager,
+                    params,
+                )
             )
+
+        @self.mcp_server.tool()
+        def create_catalog_item_variable(params: CreateCatalogItemVariableParams) -> Dict[str, Any]:
+            return create_catalog_item_variable_tool(
+                self.config,
+                self.auth_manager,
+                params,
+            ).__dict__
+            
+        @self.mcp_server.tool()
+        def list_catalog_item_variables(params: ListCatalogItemVariablesParams) -> Dict[str, Any]:
+            return list_catalog_item_variables_tool(
+                self.config,
+                self.auth_manager,
+                params,
+            ).__dict__
+            
+        @self.mcp_server.tool()
+        def update_catalog_item_variable(params: UpdateCatalogItemVariableParams) -> Dict[str, Any]:
+            return update_catalog_item_variable_tool(
+                self.config,
+                self.auth_manager,
+                params,
+            ).__dict__
 
         # Register change management tools
         @self.mcp_server.tool()
@@ -770,6 +814,15 @@ class ServiceNowMCP:
         @self.mcp_server.tool()
         def remove_group_members(params: RemoveGroupMembersParams) -> Dict[str, Any]:
             return remove_group_members_tool(
+                self.config,
+                self.auth_manager,
+                params,
+            )
+            
+        @self.mcp_server.tool()
+        def list_groups(params: ListGroupsParams) -> Dict[str, Any]:
+            """List groups from ServiceNow with optional filtering"""
+            return list_groups_tool(
                 self.config,
                 self.auth_manager,
                 params,

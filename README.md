@@ -145,6 +145,9 @@ The ServiceNow MCP server provides the following tools:
 4. **create_catalog_category** - Create a new service catalog category in ServiceNow
 5. **update_catalog_category** - Update an existing service catalog category in ServiceNow
 6. **move_catalog_items** - Move catalog items between categories in ServiceNow
+7. **create_catalog_item_variable** - Create a new variable (form field) for a catalog item
+8. **list_catalog_item_variables** - List all variables for a catalog item
+9. **update_catalog_item_variable** - Update an existing variable for a catalog item
 
 #### Catalog Optimization Tools
 
@@ -209,6 +212,7 @@ The ServiceNow MCP server provides the following tools:
 6. **update_group** - Update an existing group in ServiceNow
 7. **add_group_members** - Add members to a group in ServiceNow
 8. **remove_group_members** - Remove members from a group in ServiceNow
+9. **list_groups** - List groups with filtering options
 
 ### Using the MCP CLI
 
@@ -271,6 +275,11 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Move the 'Virtual Machine' catalog item to the 'Cloud Services' category"
 - "Create a subcategory called 'Monitors' under the 'IT Equipment' category"
 - "Reorganize our catalog by moving all software items to the 'Software' category"
+- "Create a description field for the laptop request catalog item"
+- "Add a dropdown field for selecting laptop models to catalog item"
+- "List all form fields for the VPN access request catalog item"
+- "Make the department field mandatory in the software request form"
+- "Update the help text for the cost center field"
 
 #### Catalog Optimization Examples
 - "Analyze our service catalog and identify opportunities for improvement"
@@ -336,6 +345,7 @@ Once the ServiceNow MCP server is configured with Claude Desktop, you can ask Cl
 - "Remove a user from the Biomedical Engineering group"
 - "Find all active users in the system with 'doctor' in their title"
 - "Create a user that will act as an approver for the Radiology department"
+- "List all IT support groups in the system"
 
 ### Example Scripts
 
