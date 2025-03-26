@@ -382,26 +382,26 @@ class ServiceNowMCP:
             """List service catalog categories."""
             return json.dumps(list_catalog_categories_tool(self.config, self.auth_manager, params))
 
-        @self.mcp_server.tool()
-        def create_catalog_category(params: CreateCatalogCategoryParams) -> str:
-            """Create a new service catalog category."""
-            return json.dumps(
-                create_catalog_category_tool(self.config, self.auth_manager, params).dict()
-            )
+        # @self.mcp_server.tool()
+        # def create_catalog_category(params: CreateCatalogCategoryParams) -> str:
+        #     """Create a new service catalog category."""
+        #     return json.dumps(
+        #         create_catalog_category_tool(self.config, self.auth_manager, params).dict()
+        #     )
 
-        @self.mcp_server.tool()
-        def update_catalog_category(params: UpdateCatalogCategoryParams) -> str:
-            """Update an existing service catalog category."""
-            return json.dumps(
-                update_catalog_category_tool(self.config, self.auth_manager, params).dict()
-            )
+        # @self.mcp_server.tool()
+        # def update_catalog_category(params: UpdateCatalogCategoryParams) -> str:
+        #     """Update an existing service catalog category."""
+        #     return json.dumps(
+        #         update_catalog_category_tool(self.config, self.auth_manager, params).dict()
+        #     )
 
-        @self.mcp_server.tool()
-        def move_catalog_items(params: MoveCatalogItemsParams) -> str:
-            """Move catalog items to a different category."""
-            return json.dumps(
-                move_catalog_items_tool(self.config, self.auth_manager, params).dict()
-            )
+        # @self.mcp_server.tool()
+        # def move_catalog_items(params: MoveCatalogItemsParams) -> str:
+        #     """Move catalog items to a different category."""
+        #     return json.dumps(
+        #         move_catalog_items_tool(self.config, self.auth_manager, params).dict()
+        #     )
 
         @self.mcp_server.tool()
         def get_optimization_recommendations(params: OptimizationRecommendationsParams) -> str:
@@ -449,61 +449,61 @@ class ServiceNowMCP:
             ).__dict__
 
         # Register change management tools
-        @self.mcp_server.tool()
-        def create_change_request(params: CreateChangeRequestParams) -> str:
-            """Create a new change request in ServiceNow"""
-            return create_change_request_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def create_change_request(params: CreateChangeRequestParams) -> str:
+        #     """Create a new change request in ServiceNow"""
+        #     return create_change_request_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def update_change_request(params: UpdateChangeRequestParams) -> str:
-            """Update an existing change request in ServiceNow"""
-            return update_change_request_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def update_change_request(params: UpdateChangeRequestParams) -> str:
+        #     """Update an existing change request in ServiceNow"""
+        #     return update_change_request_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def list_change_requests(params: ListChangeRequestsParams) -> str:
-            """List change requests from ServiceNow"""
-            return list_change_requests_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def list_change_requests(params: ListChangeRequestsParams) -> str:
+        #     """List change requests from ServiceNow"""
+        #     return list_change_requests_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def get_change_request_details(params: GetChangeRequestDetailsParams) -> str:
-            """Get detailed information about a specific change request"""
-            return get_change_request_details_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def get_change_request_details(params: GetChangeRequestDetailsParams) -> str:
+        #     """Get detailed information about a specific change request"""
+        #     return get_change_request_details_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def add_change_task(params: AddChangeTaskParams) -> str:
-            """Add a task to a change request"""
-            return add_change_task_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def add_change_task(params: AddChangeTaskParams) -> str:
+        #     """Add a task to a change request"""
+        #     return add_change_task_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def submit_change_for_approval(params: SubmitChangeForApprovalParams) -> str:
-            """Submit a change request for approval"""
-            return submit_change_for_approval_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def submit_change_for_approval(params: SubmitChangeForApprovalParams) -> str:
+        #     """Submit a change request for approval"""
+        #     return submit_change_for_approval_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def approve_change(params: ApproveChangeParams) -> str:
-            """Approve a change request"""
-            return approve_change_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def approve_change(params: ApproveChangeParams) -> str:
+        #     """Approve a change request"""
+        #     return approve_change_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def reject_change(params: RejectChangeParams) -> str:
-            """Reject a change request"""
-            return reject_change_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def reject_change(params: RejectChangeParams) -> str:
+        #     """Reject a change request"""
+        #     return reject_change_tool(self.config, self.auth_manager, params)
 
         # Register workflow management tools
-        @self.mcp_server.tool()
-        def list_workflows(params: ListWorkflowsParams) -> str:
-            """List workflows from ServiceNow"""
-            return list_workflows_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def list_workflows(params: ListWorkflowsParams) -> str:
+        #     """List workflows from ServiceNow"""
+        #     return list_workflows_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def get_workflow_details(params: GetWorkflowDetailsParams) -> str:
-            """Get detailed information about a specific workflow"""
-            return get_workflow_details_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def get_workflow_details(params: GetWorkflowDetailsParams) -> str:
+        #     """Get detailed information about a specific workflow"""
+        #     return get_workflow_details_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def list_workflow_versions(params: ListWorkflowVersionsParams) -> str:
-            """List workflow versions from ServiceNow"""
-            return list_workflow_versions_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def list_workflow_versions(params: ListWorkflowVersionsParams) -> str:
+        #     """List workflow versions from ServiceNow"""
+        #     return list_workflow_versions_tool(self.config, self.auth_manager, params)
 
         @self.mcp_server.tool()
         def get_workflow_activities(params: GetWorkflowActivitiesParams) -> str:
