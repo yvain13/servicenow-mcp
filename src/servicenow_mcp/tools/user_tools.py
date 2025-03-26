@@ -63,12 +63,15 @@ class GetUserParams(BaseModel):
 
 class ListUsersParams(BaseModel):
     """Parameters for listing users."""
-    
+
     limit: int = Field(10, description="Maximum number of users to return")
     offset: int = Field(0, description="Offset for pagination")
     active: Optional[bool] = Field(None, description="Filter by active status")
     department: Optional[str] = Field(None, description="Filter by department")
-    query: Optional[str] = Field(None, description="Case-insensitive search term that matches against name, username, or email fields. Uses ServiceNow's LIKE operator for partial matching.")
+    query: Optional[str] = Field(
+        None,
+        description="Case-insensitive search term that matches against name, username, or email fields. Uses ServiceNow's LIKE operator for partial matching.",
+    )
 
 
 class CreateGroupParams(BaseModel):
@@ -80,7 +83,9 @@ class CreateGroupParams(BaseModel):
     parent: Optional[str] = Field(None, description="Parent group (sys_id or name)")
     type: Optional[str] = Field(None, description="Type of the group")
     email: Optional[str] = Field(None, description="Email address for the group")
-    members: Optional[List[str]] = Field(None, description="List of user sys_ids or usernames to add as members")
+    members: Optional[List[str]] = Field(
+        None, description="List of user sys_ids or usernames to add as members"
+    )
     active: Optional[bool] = Field(True, description="Whether the group is active")
 
 
@@ -101,23 +106,30 @@ class AddGroupMembersParams(BaseModel):
     """Parameters for adding members to a group."""
 
     group_id: str = Field(..., description="Group ID or sys_id")
-    members: List[str] = Field(..., description="List of user sys_ids or usernames to add as members")
+    members: List[str] = Field(
+        ..., description="List of user sys_ids or usernames to add as members"
+    )
 
 
 class RemoveGroupMembersParams(BaseModel):
     """Parameters for removing members from a group."""
 
     group_id: str = Field(..., description="Group ID or sys_id")
-    members: List[str] = Field(..., description="List of user sys_ids or usernames to remove as members")
+    members: List[str] = Field(
+        ..., description="List of user sys_ids or usernames to remove as members"
+    )
 
 
 class ListGroupsParams(BaseModel):
     """Parameters for listing groups."""
-    
+
     limit: int = Field(10, description="Maximum number of groups to return")
     offset: int = Field(0, description="Offset for pagination")
     active: Optional[bool] = Field(None, description="Filter by active status")
-    query: Optional[str] = Field(None, description="Case-insensitive search term that matches against group name or description fields. Uses ServiceNow's LIKE operator for partial matching.")
+    query: Optional[str] = Field(
+        None,
+        description="Case-insensitive search term that matches against group name or description fields. Uses ServiceNow's LIKE operator for partial matching.",
+    )
     type: Optional[str] = Field(None, description="Filter by group type")
 
 
@@ -371,7 +383,9 @@ def list_users(
     if params.department:
         query_parts.append(f"department={params.department}")
     if params.query:
-        query_parts.append(f"^nameLIKE{params.query}^ORuser_nameLIKE{params.query}^ORemailLIKE{params.query}")
+        query_parts.append(
+            f"^nameLIKE{params.query}^ORuser_nameLIKE{params.query}^ORemailLIKE{params.query}"
+        )
 
     if query_parts:
         query_params["sysparm_query"] = "^".join(query_parts)
@@ -387,7 +401,7 @@ def list_users(
         response.raise_for_status()
 
         result = response.json().get("result", [])
-        
+
         return {
             "success": True,
             "message": f"Found {len(result)} users",
@@ -446,7 +460,7 @@ def list_groups(
         response.raise_for_status()
 
         result = response.json().get("result", [])
-        
+
         return {
             "success": True,
             "message": f"Found {len(result)} groups",
@@ -478,8 +492,8 @@ def assign_roles_to_user(
         Boolean indicating success.
     """
     # For each role, create a user_role record
-    api_url = f"{config.api_url}/table/sys_user_role"
-    
+    api_url = f"{config.api_url}/table/sys_user_has_role"
+
     success = True
     for role in roles:
         # First check if the role exists
@@ -648,9 +662,9 @@ def create_group(
         # Add members if provided
         if params.members and group_id:
             add_group_members(
-                config, 
-                auth_manager, 
-                AddGroupMembersParams(group_id=group_id, members=params.members)
+                config,
+                auth_manager,
+                AddGroupMembersParams(group_id=group_id, members=params.members),
             )
 
         return GroupResponse(
@@ -747,33 +761,25 @@ def add_group_members(
         Response with the result of the operation.
     """
     api_url = f"{config.api_url}/table/sys_user_grmember"
-    
+
     success = True
     failed_members = []
-    
+
     for member in params.members:
         # Get user ID if username is provided
         user_id = member
         if not member.startswith("sys_id:"):
-            user = get_user(
-                config, 
-                auth_manager, 
-                GetUserParams(user_name=member)
-            )
+            user = get_user(config, auth_manager, GetUserParams(user_name=member))
             if not user.get("success"):
-                user = get_user(
-                    config, 
-                    auth_manager, 
-                    GetUserParams(email=member)
-                )
-            
+                user = get_user(config, auth_manager, GetUserParams(email=member))
+
             if user.get("success"):
                 user_id = user.get("user", {}).get("sys_id")
             else:
                 success = False
                 failed_members.append(member)
                 continue
-                
+
         # Create group membership
         data = {
             "group": params.group_id,
@@ -823,30 +829,22 @@ def remove_group_members(
     """
     success = True
     failed_members = []
-    
+
     for member in params.members:
         # Get user ID if username is provided
         user_id = member
         if not member.startswith("sys_id:"):
-            user = get_user(
-                config, 
-                auth_manager, 
-                GetUserParams(user_name=member)
-            )
+            user = get_user(config, auth_manager, GetUserParams(user_name=member))
             if not user.get("success"):
-                user = get_user(
-                    config, 
-                    auth_manager, 
-                    GetUserParams(email=member)
-                )
-            
+                user = get_user(config, auth_manager, GetUserParams(email=member))
+
             if user.get("success"):
                 user_id = user.get("user", {}).get("sys_id")
             else:
                 success = False
                 failed_members.append(member)
                 continue
-                
+
         # Find and delete the group membership
         api_url = f"{config.api_url}/table/sys_user_grmember"
         query_params = {
@@ -863,24 +861,24 @@ def remove_group_members(
                 timeout=config.timeout,
             )
             response.raise_for_status()
-            
+
             result = response.json().get("result", [])
             if not result:
                 success = False
                 failed_members.append(member)
                 continue
-                
+
             # Then delete the membership record
             membership_id = result[0].get("sys_id")
             delete_url = f"{api_url}/{membership_id}"
-            
+
             response = requests.delete(
                 delete_url,
                 headers=auth_manager.get_headers(),
                 timeout=config.timeout,
             )
             response.raise_for_status()
-            
+
         except requests.RequestException as e:
             logger.error(f"Failed to remove member '{member}' from group: {e}")
             success = False
@@ -895,4 +893,4 @@ def remove_group_members(
         success=success,
         message=message,
         group_id=params.group_id,
-    ) 
+    )
