@@ -4,30 +4,35 @@ ServiceNow MCP Server
 This module provides the main implementation of the ServiceNow MCP server.
 """
 
-import os
-from typing import Dict, Union, Any
 import json
 import logging
+import os
+from typing import Any, Dict, Union
 
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 from servicenow_mcp.auth.auth_manager import AuthManager
-from servicenow_mcp.resources.catalog import (
-    CatalogCategoryListParams,
-    CatalogListParams,
-    CatalogResource,
+from servicenow_mcp.tools.catalog_optimization import (
+    OptimizationRecommendationsParams,
+    UpdateCatalogItemParams,
 )
-from servicenow_mcp.resources.incidents import IncidentListParams, IncidentResource
-from servicenow_mcp.resources.changesets import ChangesetListParams, ChangesetResource
-from servicenow_mcp.resources.script_includes import ScriptIncludeListParams, ScriptIncludeResource
+from servicenow_mcp.tools.catalog_optimization import (
+    get_optimization_recommendations as get_optimization_recommendations_tool,
+)
+from servicenow_mcp.tools.catalog_optimization import (
+    update_catalog_item as update_catalog_item_tool,
+)
 from servicenow_mcp.tools.catalog_tools import (
+    CreateCatalogCategoryParams,
     GetCatalogItemParams,
     ListCatalogCategoriesParams,
     ListCatalogItemsParams,
-    CreateCatalogCategoryParams,
-    UpdateCatalogCategoryParams,
     MoveCatalogItemsParams,
+    UpdateCatalogCategoryParams,
+)
+from servicenow_mcp.tools.catalog_tools import (
+    create_catalog_category as create_catalog_category_tool,
 )
 from servicenow_mcp.tools.catalog_tools import (
     get_catalog_item as get_catalog_item_tool,
@@ -39,19 +44,10 @@ from servicenow_mcp.tools.catalog_tools import (
     list_catalog_items as list_catalog_items_tool,
 )
 from servicenow_mcp.tools.catalog_tools import (
-    create_catalog_category as create_catalog_category_tool,
+    move_catalog_items as move_catalog_items_tool,
 )
 from servicenow_mcp.tools.catalog_tools import (
     update_catalog_category as update_catalog_category_tool,
-)
-from servicenow_mcp.tools.catalog_tools import (
-    move_catalog_items as move_catalog_items_tool,
-)
-from servicenow_mcp.tools.catalog_optimization import (
-    OptimizationRecommendationsParams,
-    UpdateCatalogItemParams,
-    get_optimization_recommendations as get_optimization_recommendations_tool,
-    update_catalog_item as update_catalog_item_tool,
 )
 from servicenow_mcp.tools.catalog_variables import (
     CreateCatalogItemVariableParams,
@@ -67,30 +63,6 @@ from servicenow_mcp.tools.catalog_variables import (
 from servicenow_mcp.tools.catalog_variables import (
     update_catalog_item_variable as update_catalog_item_variable_tool,
 )
-from servicenow_mcp.tools.incident_tools import (
-    AddCommentParams,
-    CreateIncidentParams,
-    ListIncidentsParams,
-    ResolveIncidentParams,
-    UpdateIncidentParams,
-)
-from servicenow_mcp.tools.incident_tools import (
-    add_comment as add_comment_tool,
-)
-from servicenow_mcp.tools.incident_tools import (
-    create_incident as create_incident_tool,
-)
-from servicenow_mcp.tools.incident_tools import (
-    list_incidents as list_incidents_tool,
-)
-from servicenow_mcp.tools.incident_tools import (
-    resolve_incident as resolve_incident_tool,
-)
-from servicenow_mcp.tools.incident_tools import (
-    update_incident as update_incident_tool,
-)
-from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
-
 from servicenow_mcp.tools.change_tools import (
     AddChangeTaskParams,
     ApproveChangeParams,
@@ -125,20 +97,188 @@ from servicenow_mcp.tools.change_tools import (
 from servicenow_mcp.tools.change_tools import (
     update_change_request as update_change_request_tool,
 )
-
+from servicenow_mcp.tools.changeset_tools import (
+    AddFileToChangesetParams,
+    CommitChangesetParams,
+    CreateChangesetParams,
+    GetChangesetDetailsParams,
+    ListChangesetsParams,
+    PublishChangesetParams,
+    UpdateChangesetParams,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    add_file_to_changeset as add_file_to_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    commit_changeset as commit_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    create_changeset as create_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    get_changeset_details as get_changeset_details_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    list_changesets as list_changesets_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    publish_changeset as publish_changeset_tool,
+)
+from servicenow_mcp.tools.changeset_tools import (
+    update_changeset as update_changeset_tool,
+)
+from servicenow_mcp.tools.incident_tools import (
+    AddCommentParams,
+    CreateIncidentParams,
+    ListIncidentsParams,
+    ResolveIncidentParams,
+    UpdateIncidentParams,
+)
+from servicenow_mcp.tools.incident_tools import (
+    add_comment as add_comment_tool,
+)
+from servicenow_mcp.tools.incident_tools import (
+    create_incident as create_incident_tool,
+)
+from servicenow_mcp.tools.incident_tools import (
+    list_incidents as list_incidents_tool,
+)
+from servicenow_mcp.tools.incident_tools import (
+    resolve_incident as resolve_incident_tool,
+)
+from servicenow_mcp.tools.incident_tools import (
+    update_incident as update_incident_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    ArticleResponse,
+    CategoryResponse,
+    CreateArticleParams,
+    CreateCategoryParams,
+    CreateKnowledgeBaseParams,
+    GetArticleParams,
+    KnowledgeBaseResponse,
+    ListArticlesParams,
+    ListCategoriesParams,
+    ListKnowledgeBasesParams,
+    PublishArticleParams,
+    UpdateArticleParams,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    create_article as create_article_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    create_category as create_category_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    create_knowledge_base as create_knowledge_base_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    get_article as get_article_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    list_articles as list_articles_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    list_categories as list_categories_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    list_knowledge_bases as list_knowledge_bases_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    publish_article as publish_article_tool,
+)
+from servicenow_mcp.tools.knowledge_base import (
+    update_article as update_article_tool,
+)
+from servicenow_mcp.tools.script_include_tools import (
+    CreateScriptIncludeParams,
+    DeleteScriptIncludeParams,
+    GetScriptIncludeParams,
+    ListScriptIncludesParams,
+    ScriptIncludeResponse,
+    UpdateScriptIncludeParams,
+)
+from servicenow_mcp.tools.script_include_tools import (
+    create_script_include as create_script_include_tool,
+)
+from servicenow_mcp.tools.script_include_tools import (
+    delete_script_include as delete_script_include_tool,
+)
+from servicenow_mcp.tools.script_include_tools import (
+    get_script_include as get_script_include_tool,
+)
+from servicenow_mcp.tools.script_include_tools import (
+    list_script_includes as list_script_includes_tool,
+)
+from servicenow_mcp.tools.script_include_tools import (
+    update_script_include as update_script_include_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    AddGroupMembersParams,
+    CreateGroupParams,
+    CreateUserParams,
+    GetUserParams,
+    ListGroupsParams,
+    ListUsersParams,
+    RemoveGroupMembersParams,
+    UpdateGroupParams,
+    UpdateUserParams,
+)
+from servicenow_mcp.tools.user_tools import (
+    add_group_members as add_group_members_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    create_group as create_group_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    create_user as create_user_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    get_user as get_user_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    list_groups as list_groups_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    list_users as list_users_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    remove_group_members as remove_group_members_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    update_group as update_group_tool,
+)
+from servicenow_mcp.tools.user_tools import (
+    update_user as update_user_tool,
+)
 from servicenow_mcp.tools.workflow_tools import (
+    ActivateWorkflowParams,
+    AddWorkflowActivityParams,
+    CreateWorkflowParams,
+    DeactivateWorkflowParams,
+    DeleteWorkflowActivityParams,
     GetWorkflowActivitiesParams,
     GetWorkflowDetailsParams,
     ListWorkflowsParams,
     ListWorkflowVersionsParams,
-    CreateWorkflowParams,
-    UpdateWorkflowParams,
-    ActivateWorkflowParams,
-    DeactivateWorkflowParams,
-    AddWorkflowActivityParams,
-    UpdateWorkflowActivityParams,
-    DeleteWorkflowActivityParams,
     ReorderWorkflowActivitiesParams,
+    UpdateWorkflowActivityParams,
+    UpdateWorkflowParams,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    activate_workflow as activate_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    add_workflow_activity as add_workflow_activity_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    create_workflow as create_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    deactivate_workflow as deactivate_workflow_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    delete_workflow_activity as delete_workflow_activity_tool,
 )
 from servicenow_mcp.tools.workflow_tools import (
     get_workflow_activities as get_workflow_activities_tool,
@@ -147,145 +287,21 @@ from servicenow_mcp.tools.workflow_tools import (
     get_workflow_details as get_workflow_details_tool,
 )
 from servicenow_mcp.tools.workflow_tools import (
-    list_workflows as list_workflows_tool,
-)
-from servicenow_mcp.tools.workflow_tools import (
     list_workflow_versions as list_workflow_versions_tool,
 )
 from servicenow_mcp.tools.workflow_tools import (
-    create_workflow as create_workflow_tool,
+    list_workflows as list_workflows_tool,
+)
+from servicenow_mcp.tools.workflow_tools import (
+    reorder_workflow_activities as reorder_workflow_activities_tool,
 )
 from servicenow_mcp.tools.workflow_tools import (
     update_workflow as update_workflow_tool,
 )
 from servicenow_mcp.tools.workflow_tools import (
-    activate_workflow as activate_workflow_tool,
-)
-from servicenow_mcp.tools.workflow_tools import (
-    deactivate_workflow as deactivate_workflow_tool,
-)
-from servicenow_mcp.tools.workflow_tools import (
-    add_workflow_activity as add_workflow_activity_tool,
-)
-from servicenow_mcp.tools.workflow_tools import (
     update_workflow_activity as update_workflow_activity_tool,
 )
-from servicenow_mcp.tools.workflow_tools import (
-    delete_workflow_activity as delete_workflow_activity_tool,
-)
-from servicenow_mcp.tools.workflow_tools import (
-    reorder_workflow_activities as reorder_workflow_activities_tool,
-)
-
-from servicenow_mcp.tools.changeset_tools import (
-    ListChangesetsParams,
-    GetChangesetDetailsParams,
-    CreateChangesetParams,
-    UpdateChangesetParams,
-    CommitChangesetParams,
-    PublishChangesetParams,
-    AddFileToChangesetParams,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    list_changesets as list_changesets_tool,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    get_changeset_details as get_changeset_details_tool,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    create_changeset as create_changeset_tool,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    update_changeset as update_changeset_tool,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    commit_changeset as commit_changeset_tool,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    publish_changeset as publish_changeset_tool,
-)
-from servicenow_mcp.tools.changeset_tools import (
-    add_file_to_changeset as add_file_to_changeset_tool,
-)
-
-from servicenow_mcp.tools.script_include_tools import (
-    ListScriptIncludesParams,
-    GetScriptIncludeParams,
-    CreateScriptIncludeParams,
-    UpdateScriptIncludeParams,
-    DeleteScriptIncludeParams,
-    ScriptIncludeResponse,
-    list_script_includes as list_script_includes_tool,
-    get_script_include as get_script_include_tool,
-    create_script_include as create_script_include_tool,
-    update_script_include as update_script_include_tool,
-    delete_script_include as delete_script_include_tool,
-)
-
-from servicenow_mcp.tools.knowledge_base import (
-    CreateKnowledgeBaseParams,
-    ListKnowledgeBasesParams,
-    CreateCategoryParams,
-    ListCategoriesParams,
-    CreateArticleParams,
-    UpdateArticleParams,
-    PublishArticleParams,
-    ListArticlesParams,
-    GetArticleParams,
-    KnowledgeBaseResponse,
-    CategoryResponse,
-    ArticleResponse,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    create_knowledge_base as create_knowledge_base_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    create_category as create_category_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    create_article as create_article_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    update_article as update_article_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    publish_article as publish_article_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    list_articles as list_articles_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    get_article as get_article_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    list_knowledge_bases as list_knowledge_bases_tool,
-)
-from servicenow_mcp.tools.knowledge_base import (
-    list_categories as list_categories_tool,
-)
-
-from servicenow_mcp.tools.user_tools import (
-    CreateUserParams,
-    UpdateUserParams,
-    GetUserParams,
-    ListUsersParams,
-    CreateGroupParams,
-    UpdateGroupParams,
-    AddGroupMembersParams,
-    RemoveGroupMembersParams,
-    ListGroupsParams,
-)
-from servicenow_mcp.tools.user_tools import (
-    create_user as create_user_tool,
-    update_user as update_user_tool,
-    get_user as get_user_tool,
-    list_users as list_users_tool,
-    create_group as create_group_tool,
-    update_group as update_group_tool,
-    add_group_members as add_group_members_tool,
-    remove_group_members as remove_group_members_tool,
-    list_groups as list_groups_tool,
-)
+from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -318,80 +334,8 @@ class ServiceNowMCP:
         self.name = "ServiceNow"
 
         # Register resources and tools
-        self._register_resources()
         self._register_tools()
 
-    def _register_resources(self):
-        """Register all ServiceNow resources with the MCP server."""
-        # Register incident resources
-        incident_resource = IncidentResource(self.config, self.auth_manager)
-
-        # Use decorator pattern for resources
-        @self.mcp_server.resource("incidents://list")
-        async def list_incidents() -> str:
-            """List incidents from ServiceNow"""
-            # Since there's no URI parameter, we pass an empty params object
-            incidents = await incident_resource.list_incidents(IncidentListParams())
-            return incidents
-
-        @self.mcp_server.resource("incident://{incident_id}")
-        def get_incident(incident_id: str) -> str:
-            """Get a specific incident from ServiceNow by ID or number"""
-            return incident_resource.get_incident(incident_id)
-
-        # Register catalog resources
-        catalog_resource = CatalogResource(self.config, self.auth_manager)
-
-        @self.mcp_server.resource("catalog://items")
-        async def list_catalog_items() -> str:
-            """List catalog items from ServiceNow"""
-            # Since there's no URI parameter, we pass an empty params object
-            items = await catalog_resource.list_catalog_items(CatalogListParams())
-            return items
-
-        @self.mcp_server.resource("catalog://categories")
-        async def list_catalog_categories() -> str:
-            """List catalog categories from ServiceNow"""
-            # Since there's no URI parameter, we pass an empty params object
-            categories = await catalog_resource.list_catalog_categories(CatalogCategoryListParams())
-            return categories
-
-        @self.mcp_server.resource("catalog://{item_id}")
-        async def get_catalog_item(item_id: str) -> str:
-            """Get a specific catalog item from ServiceNow by ID or number"""
-            return await catalog_resource.get_catalog_item(item_id)
-
-        # Register changeset resources
-        changeset_resource = ChangesetResource(self.config, self.auth_manager)
-
-        @self.mcp_server.resource("changesets://list")
-        async def list_changesets() -> str:
-            """List changesets from ServiceNow"""
-            # Since there's no URI parameter, we pass an empty params object
-            changesets = await changeset_resource.list_changesets(ChangesetListParams())
-            return changesets
-
-        @self.mcp_server.resource("changeset://{changeset_id}")
-        async def get_changeset(changeset_id: str) -> str:
-            """Get a specific changeset from ServiceNow by ID"""
-            return await changeset_resource.get_changeset(changeset_id)
-
-        # Register script include resources
-        script_include_resource = ScriptIncludeResource(self.config, self.auth_manager)
-
-        @self.mcp_server.resource("scriptincludes://list")
-        async def list_script_includes() -> str:
-            """List script includes from ServiceNow"""
-            # Since there's no URI parameter, we pass an empty params object
-            script_includes = await script_include_resource.list_script_includes(
-                ScriptIncludeListParams()
-            )
-            return script_includes
-
-        @self.mcp_server.resource("scriptinclude://{script_include_id}")
-        async def get_script_include(script_include_id: str) -> str:
-            """Get a specific script include from ServiceNow by ID or name"""
-            return await script_include_resource.get_script_include(script_include_id)
 
     def _register_tools(self):
         """Register all ServiceNow tools with the MCP server."""
