@@ -191,6 +191,22 @@ The ServiceNow MCP server provides the following tools:
 4. **update_script_include** - Update an existing script include in ServiceNow
 5. **delete_script_include** - Delete a script include from ServiceNow
 
+#### Business Rule Management Tools
+
+1. **list_business_rules** - List business rules from ServiceNow
+2. **get_business_rule** - Get a specific business rule from ServiceNow
+3. **create_business_rule** - Create a new business rule in ServiceNow
+4. **update_business_rule** - Update an existing business rule in ServiceNow
+5. **delete_business_rule** - Delete a business rule from ServiceNow
+
+#### Client Script Management Tools
+
+1. **list_client_scripts** - List client scripts from ServiceNow
+2. **get_client_script** - Get a specific client script from ServiceNow
+3. **create_client_script** - Create a new client script in ServiceNow
+4. **update_client_script** - Update an existing client script in ServiceNow
+5. **delete_client_script** - Delete a client script from ServiceNow
+
 #### Changeset Management Tools
 
 1. **list_changesets** - List changesets from ServiceNow with filtering options
