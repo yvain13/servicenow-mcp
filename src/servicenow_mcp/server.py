@@ -341,25 +341,25 @@ class ServiceNowMCP:
         """Register all ServiceNow tools with the MCP server."""
 
         # Register incident tools
-        @self.mcp_server.tool()
-        def create_incident(params: CreateIncidentParams) -> str:
-            """Create a new incident in ServiceNow"""
-            return create_incident_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def create_incident(params: CreateIncidentParams) -> str:
+        #     """Create a new incident in ServiceNow"""
+        #     return create_incident_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def update_incident(params: UpdateIncidentParams) -> str:
-            """Update an existing incident in ServiceNow"""
-            return update_incident_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def update_incident(params: UpdateIncidentParams) -> str:
+        #     """Update an existing incident in ServiceNow"""
+        #     return update_incident_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def add_comment(params: AddCommentParams) -> str:
-            """Add a comment to an incident in ServiceNow"""
-            return add_comment_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def add_comment(params: AddCommentParams) -> str:
+        #     """Add a comment to an incident in ServiceNow"""
+        #     return add_comment_tool(self.config, self.auth_manager, params)
 
-        @self.mcp_server.tool()
-        def resolve_incident(params: ResolveIncidentParams) -> str:
-            """Resolve an incident in ServiceNow"""
-            return resolve_incident_tool(self.config, self.auth_manager, params)
+        # @self.mcp_server.tool()
+        # def resolve_incident(params: ResolveIncidentParams) -> str:
+        #     """Resolve an incident in ServiceNow"""
+        #     return resolve_incident_tool(self.config, self.auth_manager, params)
 
         @self.mcp_server.tool()
         def list_incidents(params: ListIncidentsParams) -> str:
@@ -774,6 +774,66 @@ class ServiceNowMCP:
                 self.auth_manager,
                 params,
             )
+
+        # Register business rule tools
+        @self.mcp_server.tool()
+        def list_business_rules(params: ListBusinessRulesParams) -> str:
+            """List business rules from ServiceNow"""
+            return json.dumps(
+                list_business_rules_tool(self.config, self.auth_manager, params)
+            )
+            
+        @self.mcp_server.tool()
+        def get_business_rule(params: GetBusinessRuleParams) -> str:
+            """Get a specific business rule from ServiceNow"""
+            return json.dumps(
+                get_business_rule_tool(self.config, self.auth_manager, params)
+            )
+            
+        @self.mcp_server.tool()
+        def create_business_rule(params: CreateBusinessRuleParams) -> BusinessRuleResponse:
+            """Create a new business rule in ServiceNow"""
+            return create_business_rule_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def update_business_rule(params: UpdateBusinessRuleParams) -> BusinessRuleResponse:
+            """Update an existing business rule in ServiceNow"""
+            return update_business_rule_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def delete_business_rule(params: DeleteBusinessRuleParams) -> BusinessRuleResponse:
+            """Delete a business rule from ServiceNow"""
+            return delete_business_rule_tool(self.config, self.auth_manager, params)
+            
+        # Register client script tools
+        @self.mcp_server.tool()
+        def list_client_scripts(params: ListClientScriptsParams) -> str:
+            """List client scripts from ServiceNow"""
+            return json.dumps(
+                list_client_scripts_tool(self.config, self.auth_manager, params)
+            )
+            
+        @self.mcp_server.tool()
+        def get_client_script(params: GetClientScriptParams) -> str:
+            """Get a specific client script from ServiceNow"""
+            return json.dumps(
+                get_client_script_tool(self.config, self.auth_manager, params)
+            )
+            
+        @self.mcp_server.tool()
+        def create_client_script(params: CreateClientScriptParams) -> ClientScriptResponse:
+            """Create a new client script in ServiceNow"""
+            return create_client_script_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def update_client_script(params: UpdateClientScriptParams) -> ClientScriptResponse:
+            """Update an existing client script in ServiceNow"""
+            return update_client_script_tool(self.config, self.auth_manager, params)
+            
+        @self.mcp_server.tool()
+        def delete_client_script(params: DeleteClientScriptParams) -> ClientScriptResponse:
+            """Delete a client script from ServiceNow"""
+            return delete_client_script_tool(self.config, self.auth_manager, params)
 
     def start(self):
         """Start the MCP server."""
